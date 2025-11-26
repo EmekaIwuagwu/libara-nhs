@@ -14,7 +14,7 @@
   }
 
   .btn-primary {
-    @apply bg-primary hover:bg-primary-dark text-white shadow-md hover:shadow-lg hover:scale-102;
+    @apply bg-primary hover:bg-primary-dark text-white shadow-md hover:shadow-lg hover:scale-105;
   }
 
   .btn-secondary {
