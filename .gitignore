@@ -32,7 +32,6 @@ Thumbs.db
 # Build outputs
 dist/
 build/
-src/public/css/output.css
 
 # Uploads
 src/public/uploads/*
