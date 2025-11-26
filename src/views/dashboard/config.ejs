@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - LibaraNHS</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="bg-slate-50">
+    <%- include('../partials/sidebar') %>
+
+    <div class="ml-64 p-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold text-slate-800 mb-8"><%= typeof config !== 'undefined' ? 'Edit' : 'Create' %> Application Configuration</h1>
+
+            <div class="card">
+                <form action="<%= typeof config !== 'undefined' ? `/dashboard/config/${config.id}/update` : '/dashboard/config/create' %>" method="POST" class="space-y-6">
+                    <div>
+                        <label for="config_name" class="label">Configuration Name</label>
+                        <input type="text" id="config_name" name="config_name" class="input" required
+                               value="<%= typeof config !== 'undefined' ? config.config_name : '' %>">
+                    </div>
+
+                    <div>
+                        <label for="job_title" class="label">Job Title</label>
+                        <input type="text" id="job_title" name="job_title" class="input" required
+                               value="<%= typeof config !== 'undefined' ? config.job_title : '' %>">
+                    </div>
+
+                    <div>
+                        <label for="job_location" class="label">Job Location</label>
+                        <input type="text" id="job_location" name="job_location" class="input" required
+                               value="<%= typeof config !== 'undefined' ? config.job_location : '' %>">
+                    </div>
+
+                    <div>
+                        <label for="skills" class="label">Skills (comma separated)</label>
+                        <textarea id="skills" name="skills" rows="3" class="input" required><%= typeof config !== 'undefined' ? config.skills : '' %></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="min_salary" class="label">Minimum Salary (£)</label>
+                            <input type="number" id="min_salary" name="min_salary" class="input"
+                                   value="<%= typeof config !== 'undefined' ? config.min_salary : '' %>">
+                        </div>
+                        <div>
+                            <label for="max_salary" class="label">Maximum Salary (£)</label>
+                            <input type="number" id="max_salary" name="max_salary" class="input"
+                                   value="<%= typeof config !== 'undefined' ? config.max_salary : '' %>">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="profile_summary" class="label">Profile Summary</label>
+                        <textarea id="profile_summary" name="profile_summary" rows="5" class="input"><%= typeof config !== 'undefined' ? config.profile_summary : '' %></textarea>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        <a href="/dashboard/config/saved" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

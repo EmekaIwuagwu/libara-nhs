@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - LibaraNHS</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center py-12 px-4">
+    <div class="max-w-2xl w-full">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gradient">LibaraNHS</h1>
+            <p class="text-slate-600 mt-2">Create your account</p>
+        </div>
+
+        <div class="card">
+            <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+                    <%= errorMessage %>
+                </div>
+            <% } %>
+
+            <form action="/register" method="POST" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="first_name" class="label">First Name</label>
+                        <input type="text" id="first_name" name="first_name" class="input" required
+                               value="<%= typeof oldInput !== 'undefined' && oldInput.first_name ? oldInput.first_name : '' %>">
+                    </div>
+
+                    <div>
+                        <label for="last_name" class="label">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" class="input" required
+                               value="<%= typeof oldInput !== 'undefined' && oldInput.last_name ? oldInput.last_name : '' %>">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="email" class="label">Email Address</label>
+                    <input type="email" id="email" name="email" class="input" required
+                           value="<%= typeof oldInput !== 'undefined' && oldInput.email ? oldInput.email : '' %>">
+                </div>
+
+                <div>
+                    <label for="username" class="label">Username</label>
+                    <input type="text" id="username" name="username" class="input" required
+                           value="<%= typeof oldInput !== 'undefined' && oldInput.username ? oldInput.username : '' %>">
+                </div>
+
+                <div>
+                    <label for="phone" class="label">Phone Number (Optional)</label>
+                    <input type="tel" id="phone" name="phone" class="input"
+                           value="<%= typeof oldInput !== 'undefined' && oldInput.phone ? oldInput.phone : '' %>">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="password" class="label">Password</label>
+                        <input type="password" id="password" name="password" class="input" required>
+                        <p class="text-xs text-slate-500 mt-1">Min. 8 characters with uppercase, lowercase, and number</p>
+                    </div>
+
+                    <div>
+                        <label for="confirm_password" class="label">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="input" required>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <input type="checkbox" id="terms" name="terms" class="mt-1 mr-2" required>
+                    <label for="terms" class="text-sm text-slate-600">
+                        I agree to the <a href="#" class="text-primary hover:text-primary-dark">Terms & Conditions</a>
+                        and <a href="#" class="text-primary hover:text-primary-dark">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-full">Create Account</button>
+            </form>
+
+            <p class="mt-6 text-center text-slate-600">
+                Already have an account?
+                <a href="/login" class="text-primary hover:text-primary-dark font-semibold">Login</a>
+            </p>
+        </div>
+
+        <div class="text-center mt-6">
+            <a href="/" class="text-slate-600 hover:text-primary">← Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>

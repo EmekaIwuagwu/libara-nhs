@@ -1,0 +1,56 @@
+<%- include('../partials/header') %>
+
+<section class="py-20">
+    <div class="container mx-auto px-6">
+        <h1 class="text-5xl font-bold text-center text-slate-800 mb-12">Our Services & Pricing</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <!-- Free Plan -->
+            <div class="card text-center hover-lift">
+                <h3 class="text-2xl font-bold text-slate-800 mb-4">Free</h3>
+                <div class="text-5xl font-bold text-primary mb-4">£0</div>
+                <p class="text-slate-600 mb-6">Per month</p>
+                <ul class="space-y-3 text-left mb-8">
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> 5 applications/month</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Basic job matching</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Resume upload</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Email notifications</li>
+                </ul>
+                <a href="/register" class="btn btn-secondary w-full">Get Started</a>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="card text-center hover-lift border-4 border-primary">
+                <div class="badge badge-info mb-4">Most Popular</div>
+                <h3 class="text-2xl font-bold text-slate-800 mb-4">Pro</h3>
+                <div class="text-5xl font-bold text-primary mb-4">£29</div>
+                <p class="text-slate-600 mb-6">Per month</p>
+                <ul class="space-y-3 text-left mb-8">
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> 50 applications/month</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Advanced job matching</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> AI cover letters</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Priority support</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Application tracking</li>
+                </ul>
+                <a href="/register" class="btn btn-primary w-full">Choose Pro</a>
+            </div>
+
+            <!-- Max Plan -->
+            <div class="card text-center hover-lift">
+                <h3 class="text-2xl font-bold text-slate-800 mb-4">Max</h3>
+                <div class="text-5xl font-bold text-primary mb-4">£79</div>
+                <p class="text-slate-600 mb-6">Per month</p>
+                <ul class="space-y-3 text-left mb-8">
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Unlimited applications</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> All Pro features</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Dedicated support</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Custom configurations</li>
+                    <li class="flex items-center"><span class="text-primary mr-2">✓</span> Analytics dashboard</li>
+                </ul>
+                <a href="/register" class="btn btn-secondary w-full">Choose Max</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<%- include('../partials/footer') %>
