@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - LibaraNHS</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="bg-slate-50">
+    <%- include('../partials/sidebar') %>
+
+    <div class="ml-64 p-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold text-slate-800 mb-8">Settings</h1>
+
+            <% if (successMessage) { %>
+                <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
+                    <%= successMessage %>
+                </div>
+            <% } %>
+
+            <% if (errorMessage) { %>
+                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+                    <%= errorMessage %>
+                </div>
+            <% } %>
+
+            <!-- Tabs -->
+            <div class="flex border-b mb-8">
+                <button class="tab-btn px-6 py-3 font-semibold border-b-2 border-primary text-primary" data-tab="account">Account</button>
+                <button class="tab-btn px-6 py-3 font-semibold text-slate-600" data-tab="security">Security</button>
+                <button class="tab-btn px-6 py-3 font-semibold text-slate-600" data-tab="subscription">Subscription</button>
+                <button class="tab-btn px-6 py-3 font-semibold text-slate-600" data-tab="nhs">NHS Credentials</button>
+            </div>
+
+            <!-- Account Tab -->
+            <div class="tab-content" id="account">
+                <div class="card">
+                    <h2 class="text-2xl font-semibold text-slate-800 mb-4">Account Information</h2>
+                    <form action="/dashboard/settings/profile" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="first_name" class="label">First Name</label>
+                                <input type="text" id="first_name" name="first_name" class="input" value="<%= user.first_name %>" required>
+                            </div>
+                            <div>
+                                <label for="last_name" class="label">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" class="input" value="<%= user.last_name %>" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="email" class="label">Email</label>
+                            <input type="email" id="email" name="email" class="input" value="<%= user.email %>" required>
+                        </div>
+                        <div>
+                            <label for="phone" class="label">Phone</label>
+                            <input type="tel" id="phone" name="phone" class="input" value="<%= user.phone || '' %>">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Security Tab -->
+            <div class="tab-content hidden" id="security">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-semibold text-slate-800 mb-4">Change Password</h2>
+                    <form action="/dashboard/settings/password" method="POST" class="space-y-4">
+                        <div>
+                            <label for="current_password" class="label">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" class="input" required>
+                        </div>
+                        <div>
+                            <label for="new_password" class="label">New Password</label>
+                            <input type="password" id="new_password" name="new_password" class="input" required>
+                        </div>
+                        <div>
+                            <label for="confirm_password" class="label">Confirm New Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="input" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </form>
+                </div>
+
+                <div class="card border-red-200">
+                    <h2 class="text-2xl font-semibold text-red-600 mb-4">Danger Zone</h2>
+                    <p class="text-slate-600 mb-4">Disabling your account will prevent you from logging in and accessing your data.</p>
+                    <form action="/dashboard/settings/disable" method="POST" onsubmit="return confirm('Are you sure you want to disable your account?')">
+                        <button type="submit" class="btn btn-danger">Disable Account</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Subscription Tab -->
+            <div class="tab-content hidden" id="subscription">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-semibold text-slate-800 mb-4">Current Plan</h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <span class="badge badge-info text-lg"><%= subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) %> Plan</span>
+                            <p class="text-slate-600 mt-2"><%= subscription.applications_used %> / <%= subscription.applications_limit %> applications used this month</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="card text-center <%= subscription.plan === 'free' ? 'border-primary' : '' %>">
+                        <h3 class="font-bold mb-2">Free</h3>
+                        <p class="text-2xl font-bold text-primary mb-2">£0</p>
+                        <p class="text-sm text-slate-600 mb-4">5 apps/month</p>
+                        <% if (subscription.plan !== 'free') { %>
+                            <button onclick="upgradePlan('free')" class="btn btn-secondary text-sm">Downgrade</button>
+                        <% } else { %>
+                            <span class="text-primary font-semibold">Current Plan</span>
+                        <% } %>
+                    </div>
+
+                    <div class="card text-center <%= subscription.plan === 'pro' ? 'border-primary' : '' %>">
+                        <h3 class="font-bold mb-2">Pro</h3>
+                        <p class="text-2xl font-bold text-primary mb-2">£29</p>
+                        <p class="text-sm text-slate-600 mb-4">50 apps/month</p>
+                        <% if (subscription.plan !== 'pro') { %>
+                            <button onclick="upgradePlan('pro')" class="btn btn-primary text-sm">Upgrade</button>
+                        <% } else { %>
+                            <span class="text-primary font-semibold">Current Plan</span>
+                        <% } %>
+                    </div>
+
+                    <div class="card text-center <%= subscription.plan === 'max' ? 'border-primary' : '' %>">
+                        <h3 class="font-bold mb-2">Max</h3>
+                        <p class="text-2xl font-bold text-primary mb-2">£79</p>
+                        <p class="text-sm text-slate-600 mb-4">Unlimited</p>
+                        <% if (subscription.plan !== 'max') { %>
+                            <button onclick="upgradePlan('max')" class="btn btn-primary text-sm">Upgrade</button>
+                        <% } else { %>
+                            <span class="text-primary font-semibold">Current Plan</span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NHS Credentials Tab -->
+            <div class="tab-content hidden" id="nhs">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-semibold text-slate-800 mb-4">NHS Scotland Credentials</h2>
+                    <form onsubmit="saveCredentials(event, 'scotland')" class="space-y-4">
+                        <div>
+                            <label for="scotland_username" class="label">Username</label>
+                            <input type="text" id="scotland_username" name="username" class="input" required>
+                        </div>
+                        <div>
+                            <label for="scotland_password" class="label">Password</label>
+                            <input type="password" id="scotland_password" name="password" class="input" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Credentials</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-2xl font-semibold text-slate-800 mb-4">NHS England Credentials</h2>
+                    <form onsubmit="saveCredentials(event, 'england')" class="space-y-4">
+                        <div>
+                            <label for="england_username" class="label">Username</label>
+                            <input type="text" id="england_username" name="username" class="input" required>
+                        </div>
+                        <div>
+                            <label for="england_password" class="label">Password</label>
+                            <input type="password" id="england_password" name="password" class="input" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Credentials</button>
+                    </form>
+                </div>
+
+                <div class="card mt-6 bg-blue-50 border-blue-200">
+                    <p class="text-sm text-blue-800">🔒 Your credentials are encrypted using AES-256-GCM encryption and stored securely.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('border-primary', 'text-primary');
+                    b.classList.add('text-slate-600');
+                });
+                btn.classList.add('border-primary', 'text-primary');
+                btn.classList.remove('text-slate-600');
+
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById(tab).classList.remove('hidden');
+            });
+        });
+
+        async function saveCredentials(e, portal) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                portal,
+                username: form.username.value,
+                password: form.password.value
+            };
+
+            try {
+                const response = await fetch('/dashboard/settings/nhs-credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.success ? 'Credentials saved successfully!' : result.message);
+            } catch (error) {
+                alert('An error occurred');
+            }
+        }
+
+        function upgradePlan(plan) {
+            fetch('/dashboard/settings/upgrade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan })
+            }).then(() => window.location.reload());
+        }
+    </script>
+</body>
+</html>

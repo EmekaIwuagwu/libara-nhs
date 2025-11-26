@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - LibaraNHS</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="bg-slate-50">
+    <%- include('../partials/sidebar') %>
+
+    <div class="ml-64 p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Welcome Banner -->
+            <div class="bg-gradient-to-r from-primary to-primary-dark text-white p-8 rounded-xl mb-8">
+                <h1 class="text-3xl font-bold">Welcome back, <%= user.first_name %>!</h1>
+                <p class="mt-2 text-white/90">Here's your job application overview</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="card">
+                    <h3 class="text-slate-600 text-sm font-semibold mb-2">Total Applications</h3>
+                    <p class="text-3xl font-bold text-slate-800"><%= stats.total_applications || 0 %></p>
+                </div>
+
+                <div class="card">
+                    <h3 class="text-slate-600 text-sm font-semibold mb-2">Successful</h3>
+                    <p class="text-3xl font-bold text-green-600"><%= stats.successful_applications || 0 %></p>
+                </div>
+
+                <div class="card">
+                    <h3 class="text-slate-600 text-sm font-semibold mb-2">Pending</h3>
+                    <p class="text-3xl font-bold text-yellow-600"><%= stats.pending_applications || 0 %></p>
+                </div>
+
+                <div class="card">
+                    <h3 class="text-slate-600 text-sm font-semibold mb-2">Failed</h3>
+                    <p class="text-3xl font-bold text-red-600"><%= stats.failed_applications || 0 %></p>
+                </div>
+            </div>
+
+            <!-- Subscription Card -->
+            <div class="card mb-8">
+                <h2 class="text-2xl font-semibold text-slate-800 mb-4">Current Subscription</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center mb-2">
+                            <span class="badge badge-info text-lg"><%= subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) %> Plan</span>
+                        </div>
+                        <p class="text-slate-600">
+                            <%= remainingApplications %> of <%= subscription.applications_limit %> applications remaining this month
+                        </p>
+                        <div class="w-full bg-slate-200 rounded-full h-2 mt-3">
+                            <div class="bg-primary rounded-full h-2" style="width: <%= (remainingApplications / subscription.applications_limit * 100).toFixed(0) %>%"></div>
+                        </div>
+                    </div>
+                    <% if (subscription.plan !== 'max') { %>
+                        <a href="/dashboard/settings" class="btn btn-primary">Upgrade</a>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Recent Applications -->
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-slate-800 mb-4">Recent Applications</h2>
+                <% if (recentApplications && recentApplications.length > 0) { %>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left py-3 px-4">Job Title</th>
+                                    <th class="text-left py-3 px-4">Portal</th>
+                                    <th class="text-left py-3 px-4">Status</th>
+                                    <th class="text-left py-3 px-4">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% recentApplications.forEach(app => { %>
+                                    <tr class="border-b hover:bg-slate-50">
+                                        <td class="py-3 px-4"><%= app.job_title %></td>
+                                        <td class="py-3 px-4 capitalize"><%= app.portal %></td>
+                                        <td class="py-3 px-4">
+                                            <span class="badge <%= app.status === 'submitted' ? 'badge-success' : app.status === 'pending' ? 'badge-warning' : 'badge-danger' %>">
+                                                <%= app.status %>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4"><%= new Date(app.created_at).toLocaleDateString() %></td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <p class="text-slate-600 text-center py-8">No applications yet. Get started by creating a configuration!</p>
+                <% } %>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a href="/dashboard/resume" class="card hover-lift text-center cursor-pointer">
+                    <div class="text-4xl mb-2">📄</div>
+                    <h3 class="font-semibold text-slate-800">Upload Resume</h3>
+                </a>
+
+                <a href="/dashboard/config/create" class="card hover-lift text-center cursor-pointer">
+                    <div class="text-4xl mb-2">⚙️</div>
+                    <h3 class="font-semibold text-slate-800">Create Config</h3>
+                </a>
+
+                <a href="/dashboard/settings" class="card hover-lift text-center cursor-pointer">
+                    <div class="text-4xl mb-2">🔧</div>
+                    <h3 class="font-semibold text-slate-800">Settings</h3>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+src/public/css/output.css
+
+# Uploads
+src/public/uploads/*
+!src/public/uploads/.gitkeep
+
+# Database
+*.sql.backup
+*.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Puppeteer
+.cache/
+screenshots/
+
+# Misc
+*.pem
+*.key
+.env.local
+.env.production

@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - DB_USER=libaranhs
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=libaranhs
+      - DB_PORT=3306
+      - SESSION_SECRET=${SESSION_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - APP_URL=${APP_URL:-http://localhost:3000}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-5242880}
+      - PUPPETEER_HEADLESS=${PUPPETEER_HEADLESS:-true}
+      - PUPPETEER_TIMEOUT=${PUPPETEER_TIMEOUT:-30000}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/src/public/uploads
+    restart: unless-stopped
+    networks:
+      - libaranhs-network
+
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=libaranhs
+      - MYSQL_USER=libaranhs
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - libaranhs-network
+
+volumes:
+  mysql_data:
+  uploads:
+
+networks:
+  libaranhs-network:
+    driver: bridge
