@@ -113,11 +113,60 @@ exports.preview = async (req, res) => {
     console.log('[RESUME] Preview request for resume ID:', resumeId);
     console.log('[RESUME] Cloudinary URL:', resume.cloudinary_secure_url);
 
-    // If stored on Cloudinary, redirect directly to the secure URL
-    // Cloudinary will serve it inline by default for PDFs
+    // If stored on Cloudinary, fetch and serve with proper headers
     if (resume.cloudinary_secure_url) {
-      console.log('[RESUME] Redirecting to Cloudinary URL');
-      return res.redirect(resume.cloudinary_secure_url);
+      console.log('[RESUME] Fetching from Cloudinary and serving with proper headers');
+
+      return new Promise((resolve, reject) => {
+        const https = require('https');
+        const url = require('url');
+
+        const parsedUrl = url.parse(resume.cloudinary_secure_url);
+        const chunks = [];
+
+        const request = https.get({
+          hostname: parsedUrl.hostname,
+          path: parsedUrl.path,
+          timeout: 10000
+        }, (response) => {
+          console.log('[RESUME] Cloudinary response status:', response.statusCode);
+
+          if (response.statusCode !== 200) {
+            console.error('[RESUME] Cloudinary returned error:', response.statusCode);
+            res.status(502).send('Error fetching resume from cloud storage');
+            return resolve();
+          }
+
+          response.on('data', (chunk) => chunks.push(chunk));
+
+          response.on('end', () => {
+            const buffer = Buffer.concat(chunks);
+            console.log('[RESUME] Successfully fetched from Cloudinary, size:', buffer.length);
+
+            // Set proper headers for inline PDF viewing
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
+            res.setHeader('Content-Length', buffer.length);
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+
+            res.send(buffer);
+            resolve();
+          });
+        });
+
+        request.on('error', (error) => {
+          console.error('[RESUME] Error fetching from Cloudinary:', error.message);
+          res.status(502).send('Error fetching resume from cloud storage');
+          resolve();
+        });
+
+        request.on('timeout', () => {
+          console.error('[RESUME] Timeout fetching from Cloudinary');
+          request.destroy();
+          res.status(504).send('Timeout fetching resume from cloud storage');
+          resolve();
+        });
+      });
     }
 
     // Fallback to local file (for old resumes)
