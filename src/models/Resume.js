@@ -1,27 +1,44 @@
 const { query } = require('../config/database');
+const { deleteFile } = require('../config/cloudinary');
 const fs = require('fs').promises;
 const path = require('path');
 
 class Resume {
   static async create(resumeData) {
-    const { user_id, filename, original_name, file_path, file_size, mime_type } = resumeData;
-
-    // Check if this is the user's first resume, make it default
-    const existingResumes = await this.findByUserId(user_id);
-    const isDefault = existingResumes.length === 0;
-
-    const sql = `
-      INSERT INTO resumes (user_id, filename, original_name, file_path, file_size, mime_type, is_default)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const result = await query(sql, [
+    const {
       user_id,
       filename,
       original_name,
       file_path,
       file_size,
       mime_type,
+      cloudinary_url,
+      cloudinary_public_id,
+      cloudinary_secure_url
+    } = resumeData;
+
+    // Check if this is the user's first resume, make it default
+    const existingResumes = await this.findByUserId(user_id);
+    const isDefault = existingResumes.length === 0;
+
+    const sql = `
+      INSERT INTO resumes (
+        user_id, filename, original_name, file_path, file_size, mime_type,
+        cloudinary_url, cloudinary_public_id, cloudinary_secure_url, is_default
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const result = await query(sql, [
+      user_id,
+      filename,
+      original_name,
+      file_path || null,
+      file_size,
+      mime_type,
+      cloudinary_url || null,
+      cloudinary_public_id || null,
+      cloudinary_secure_url || null,
       isDefault
     ]);
 
@@ -71,11 +88,24 @@ class Resume {
       return false;
     }
 
-    // Delete the file from filesystem
-    try {
-      await fs.unlink(resume.file_path);
-    } catch (error) {
-      console.error('Error deleting resume file:', error);
+    // Delete from Cloudinary if it exists
+    if (resume.cloudinary_public_id) {
+      try {
+        await deleteFile(resume.cloudinary_public_id);
+        console.log('[RESUME] Deleted from Cloudinary:', resume.cloudinary_public_id);
+      } catch (error) {
+        console.error('[RESUME] Error deleting from Cloudinary:', error);
+      }
+    }
+
+    // Delete the local file if it exists
+    if (resume.file_path) {
+      try {
+        await fs.unlink(resume.file_path);
+        console.log('[RESUME] Deleted local file:', resume.file_path);
+      } catch (error) {
+        console.error('[RESUME] Error deleting local file:', error);
+      }
     }
 
     // Delete from database
