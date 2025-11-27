@@ -139,14 +139,23 @@ exports.register = async (req, res) => {
       console.error('✗ Email failed (continuing anyway):', emailError.message);
     }
 
-    // Auto-login the user
-    req.session.userId = userId;
-    req.session.userEmail = email;
-    req.session.successMessage = 'Registration successful! Welcome to LibaraNHS.';
+    // Auto-login the user - regenerate session for security
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('✗ Session regeneration error:', err);
+        req.session.errorMessage = 'Registration successful but login failed. Please login manually.';
+        return res.redirect('/login');
+      }
 
-    console.log('✓ Session set. UserID:', userId, 'SessionID:', req.sessionID);
-    console.log('✓ Redirecting to /dashboard');
-    res.redirect('/dashboard');
+      // Set user data after regeneration
+      req.session.userId = userId;
+      req.session.userEmail = email;
+      req.session.successMessage = 'Registration successful! Welcome to LibaraNHS.';
+
+      console.log('✓ Session set. UserID:', userId, 'SessionID:', req.sessionID);
+      console.log('✓ Redirecting to /dashboard');
+      res.redirect('/dashboard');
+    });
   } catch (error) {
     console.error('✗ Registration error:', error);
     req.session.errorMessage = `Registration failed: ${error.message}`;

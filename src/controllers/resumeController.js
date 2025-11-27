@@ -64,6 +64,30 @@ exports.upload = async (req, res) => {
   }
 };
 
+exports.view = async (req, res) => {
+  try {
+    const resumeId = req.params.id;
+    const userId = req.session.userId;
+
+    const resume = await Resume.findById(resumeId);
+
+    if (!resume || resume.user_id !== userId) {
+      return res.status(404).send('Resume not found');
+    }
+
+    // Set appropriate headers for PDF viewing
+    res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="' + resume.original_name + '"');
+
+    // Read and send the file
+    const fileBuffer = await fs.readFile(resume.file_path);
+    res.send(fileBuffer);
+  } catch (error) {
+    console.error('Resume view error:', error);
+    res.status(500).send('An error occurred while viewing the resume');
+  }
+};
+
 exports.download = async (req, res) => {
   try {
     const resumeId = req.params.id;
