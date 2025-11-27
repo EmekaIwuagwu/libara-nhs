@@ -1,6 +1,11 @@
 const Resume = require('../models/Resume');
 const path = require('path');
 const fs = require('fs').promises;
+const zlib = require('zlib');
+const { promisify } = require('util');
+
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
 
 exports.index = async (req, res) => {
   try {
@@ -36,6 +41,51 @@ exports.upload = async (req, res) => {
     const userId = req.session.userId;
     const file = req.file;
 
+    console.log('[RESUME] Processing file:', file.originalname);
+
+    // Read the file as buffer
+    const fileBuffer = await fs.readFile(file.path);
+    console.log('[RESUME] File size:', fileBuffer.length, 'bytes');
+
+    // Compress with gzip
+    const compressedBuffer = await gzip(fileBuffer);
+    console.log('[RESUME] Compressed size:', compressedBuffer.length, 'bytes',
+                `(${Math.round((compressedBuffer.length / fileBuffer.length) * 100)}% of original)`);
+
+    // Convert to base64
+    const base64Data = compressedBuffer.toString('base64');
+    console.log('[RESUME] Base64 encoded successfully');
+
+    // Delete local temp file
+    try {
+      await fs.unlink(file.path);
+      console.log('[RESUME] Local temp file deleted');
+    } catch (error) {
+      console.error('[RESUME] Error deleting temp file:', error);
+    }
+
+    // Create resume record in database with base64 data
+    const resumeId = await Resume.create({
+      user_id: userId,
+      filename: `resume-${Date.now()}`,
+      original_name: file.originalname,
+      file_path: null,
+      file_size: file.size,
+      mime_type: file.mimetype,
+      base64_data: base64Data,
+      compression_type: 'gzip'
+    });
+
+    console.log('[RESUME] Resume record created with base64 storage:', resumeId);
+
+    res.json({
+      success: true,
+      message: 'Resume uploaded successfully and stored securely',
+      resume: {
+        id: resumeId,
+        filename: file.originalname,
+        size: file.size,
+        compressed_size: compressedBuffer.length
     console.log('[RESUME UPLOAD] File uploaded:', file.originalname);
     console.log('[RESUME UPLOAD] Stored at:', file.path);
     console.log('[RESUME UPLOAD] Size:', file.size, 'bytes');
@@ -93,6 +143,62 @@ exports.download = async (req, res) => {
       return res.status(404).send('Resume not found');
     }
 
+    // If stored as base64, decode and send
+    if (resume.base64_data) {
+      console.log('[RESUME] Decoding base64 data for download');
+
+      // Decode from base64
+      const compressedBuffer = Buffer.from(resume.base64_data, 'base64');
+
+      // Decompress
+      const fileBuffer = await gunzip(compressedBuffer);
+
+      console.log('[RESUME] Decompressed successfully, sending file');
+
+      // Set headers for download
+      res.setHeader('Content-Type', resume.mime_type);
+      res.setHeader('Content-Disposition', `attachment; filename="${resume.original_name}"`);
+      res.setHeader('Content-Length', fileBuffer.length);
+
+      return res.send(fileBuffer);
+    }
+
+    return res.status(404).send('Resume file not found');
+  } catch (error) {
+    console.error('[RESUME] Download error:', error);
+    res.status(500).send('An error occurred while downloading the resume');
+  }
+};
+
+exports.preview = async (req, res) => {
+  try {
+    const resumeId = req.params.id;
+    const userId = req.session.userId;
+
+    const resume = await Resume.findById(resumeId);
+
+    if (!resume || resume.user_id !== userId) {
+      return res.status(404).send('Resume not found');
+    }
+
+    // If stored as base64, decode and display inline
+    if (resume.base64_data) {
+      console.log('[RESUME] Decoding base64 data for preview');
+
+      // Decode from base64
+      const compressedBuffer = Buffer.from(resume.base64_data, 'base64');
+
+      // Decompress
+      const fileBuffer = await gunzip(compressedBuffer);
+
+      console.log('[RESUME] Decompressed successfully, displaying inline');
+
+      // Set headers for inline display
+      res.setHeader('Content-Type', resume.mime_type);
+      res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
+      res.setHeader('Content-Length', fileBuffer.length);
+
+      return res.send(fileBuffer);
     if (!resume.file_path) {
       console.log('[RESUME DOWNLOAD] No file path for resume:', resumeId);
       return res.status(404).send('Resume file not found');

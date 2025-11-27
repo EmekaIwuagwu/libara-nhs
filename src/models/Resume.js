@@ -10,6 +10,12 @@ class Resume {
       original_name,
       file_path,
       file_size,
+      mime_type,
+      base64_data,
+      compression_type,
+      cloudinary_url,
+      cloudinary_public_id,
+      cloudinary_secure_url
       mime_type
     } = resumeData;
 
@@ -19,6 +25,11 @@ class Resume {
 
     const sql = `
       INSERT INTO resumes (
+        user_id, filename, original_name, file_path, file_size, mime_type,
+        base64_data, compression_type,
+        cloudinary_url, cloudinary_public_id, cloudinary_secure_url, is_default
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         user_id, filename, original_name, file_path, file_size, mime_type, is_default
       )
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -31,6 +42,11 @@ class Resume {
       file_path,
       file_size,
       mime_type,
+      base64_data || null,
+      compression_type || 'gzip',
+      cloudinary_url || null,
+      cloudinary_public_id || null,
+      cloudinary_secure_url || null,
       isDefault
     ]);
 
@@ -85,6 +101,7 @@ class Resume {
       return false;
     }
 
+    // Delete from database (base64 data is stored in DB, so this removes everything)
     if (resume.user_id !== userId) {
       console.log('[RESUME MODEL] User ID mismatch. Resume belongs to:', resume.user_id, 'Requested by:', userId);
       return false;
@@ -109,6 +126,8 @@ class Resume {
     const result = await query(sql, [id, userId]);
 
     console.log('[RESUME MODEL] Database delete result, affected rows:', result.affectedRows);
+
+    console.log('[RESUME] Deleted resume from database:', id);
 
     // If this was the default, set another one as default
     if (resume.is_default) {

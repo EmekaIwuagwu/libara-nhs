@@ -65,6 +65,11 @@
                                                 ✓ Default Resume
                                             </span>
                                         <% } %>
+                                        <% if (resume.base64_data) { %>
+                                            <span class="inline-block px-2 py-1 text-xs font-semibold text-purple-800 bg-purple-100 rounded-full mt-2 ml-1">
+                                                🔒 Secure Storage
+                                            </span>
+                                        <% } %>
                                     </div>
                                 </div>
 
@@ -132,6 +137,7 @@
             const submitButton = e.target.querySelector('button[type="submit"]');
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
+            submitButton.textContent = '🔄 Processing and storing...';
             submitButton.textContent = '📤 Uploading...';
 
             try {
@@ -142,6 +148,7 @@
                 const result = await response.json();
 
                 if (result.success) {
+                    alert('✓ Resume uploaded and stored securely!');
                     alert('✓ Resume uploaded successfully!');
                     window.location.reload();
                 } else {
