@@ -2,19 +2,26 @@ const User = require('../models/User');
 const { sendEmail } = require('../config/email');
 
 exports.showLogin = (req, res) => {
-  res.render('auth/login', {
-    title: 'Login - LibaraNHS',
-    errors: req.session.errors || [],
-    oldInput: req.session.oldInput || {},
-    errorMessage: req.session.errorMessage || null,
-    successMessage: req.session.successMessage || null
-  });
+  // Store messages in local variables
+  const errors = req.session.errors || [];
+  const oldInput = req.session.oldInput || {};
+  const errorMessage = req.session.errorMessage || null;
+  const successMessage = req.session.successMessage || null;
 
-  // Clear session messages
+  // Clear session messages immediately
   delete req.session.errors;
   delete req.session.oldInput;
   delete req.session.errorMessage;
   delete req.session.successMessage;
+
+  // Render with stored values
+  res.render('auth/login', {
+    title: 'Login - LibaraNHS',
+    errors,
+    oldInput,
+    errorMessage,
+    successMessage
+  });
 };
 
 exports.login = async (req, res) => {
@@ -82,15 +89,23 @@ exports.login = async (req, res) => {
 };
 
 exports.showRegister = (req, res) => {
-  res.render('auth/register', {
-    title: 'Register - LibaraNHS',
-    errors: req.session.errors || [],
-    oldInput: req.session.oldInput || {}
-  });
+  // Store messages in local variables
+  const errors = req.session.errors || [];
+  const oldInput = req.session.oldInput || {};
+  const errorMessage = req.session.errorMessage || null;
 
-  // Clear session data
+  // Clear session data immediately
   delete req.session.errors;
   delete req.session.oldInput;
+  delete req.session.errorMessage;
+
+  // Render with stored values
+  res.render('auth/register', {
+    title: 'Register - LibaraNHS',
+    errors,
+    oldInput,
+    errorMessage
+  });
 };
 
 exports.register = async (req, res) => {
@@ -142,11 +157,25 @@ exports.register = async (req, res) => {
     // Auto-login the user
     req.session.userId = userId;
     req.session.userEmail = email;
-    req.session.successMessage = 'Registration successful! Welcome to LibaraNHS.';
 
     console.log('✓ Session set. UserID:', userId, 'SessionID:', req.sessionID);
     console.log('✓ Redirecting to /dashboard');
     res.redirect('/dashboard');
+    // Regenerate session ID for security
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('Session regeneration error:', err);
+        req.session.errorMessage = 'Registration successful but login failed. Please try logging in.';
+        return res.redirect('/login');
+      }
+
+      // Restore user data after regeneration
+      req.session.userId = userId;
+      req.session.userEmail = email;
+      req.session.successMessage = 'Registration successful! Welcome to LibaraNHS.';
+
+      res.redirect('/dashboard');
+    });
   } catch (error) {
     console.error('✗ Registration error:', error);
     req.session.errorMessage = `Registration failed: ${error.message}`;
