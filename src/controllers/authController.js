@@ -28,47 +28,61 @@ exports.login = async (req, res) => {
   const { username, password, remember } = req.body;
 
   try {
+    console.log('[LOGIN] Attempting login for:', username);
+
     // Find user by username or email
     const user = await User.findByUsernameOrEmail(username);
 
     if (!user) {
+      console.log('[LOGIN] User not found:', username);
       req.session.errorMessage = 'Invalid username or password';
       req.session.oldInput = { username };
       return res.redirect('/login');
     }
 
+    console.log('[LOGIN] User found, verifying password...');
     // Verify password
     const isValidPassword = await User.verifyPassword(password, user.password);
 
     if (!isValidPassword) {
+      console.log('[LOGIN] Invalid password for user:', username);
       req.session.errorMessage = 'Invalid username or password';
       req.session.oldInput = { username };
       return res.redirect('/login');
     }
 
-    // Set session
-    req.session.userId = user.id;
-    req.session.userEmail = user.email;
+    console.log('[LOGIN] Password valid, user ID:', user.id);
 
-    // Extend session if remember me is checked
-    if (remember) {
-      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-    }
-
-    // Regenerate session ID for security
+    // Regenerate session ID for security before setting user data
     req.session.regenerate((err) => {
       if (err) {
         console.error('Session regeneration error:', err);
+        req.session.errorMessage = 'Login failed due to session error. Please try again.';
+        return res.redirect('/login');
       }
 
-      // Restore user data after regeneration
+      // Set user data in the new session
       req.session.userId = user.id;
       req.session.userEmail = user.email;
 
-      // Redirect to intended page or dashboard
+      // Extend session if remember me is checked
+      if (remember) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      }
+
+      // Get return URL before saving
       const returnTo = req.session.returnTo || '/dashboard';
       delete req.session.returnTo;
-      res.redirect(returnTo);
+
+      // Explicitly save session before redirecting
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('Session save error:', saveErr);
+          req.session.errorMessage = 'Login failed due to session error. Please try again.';
+          return res.redirect('/login');
+        }
+        res.redirect(returnTo);
+      });
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -101,9 +115,12 @@ exports.register = async (req, res) => {
   const { first_name, last_name, email, username, password, phone } = req.body;
 
   try {
+    console.log('[REGISTER] Starting registration for username:', username);
+
     // Check if email already exists
     const existingEmail = await User.findByEmail(email);
     if (existingEmail) {
+      console.log('[REGISTER] Email already exists:', email);
       req.session.errorMessage = 'Email address is already registered';
       req.session.oldInput = req.body;
       return res.redirect('/register');
@@ -112,12 +129,14 @@ exports.register = async (req, res) => {
     // Check if username already exists
     const existingUsername = await User.findByUsername(username);
     if (existingUsername) {
+      console.log('[REGISTER] Username already exists:', username);
       req.session.errorMessage = 'Username is already taken';
       req.session.oldInput = req.body;
       return res.redirect('/register');
     }
 
     // Create user
+    console.log('[REGISTER] Creating user...');
     const userId = await User.create({
       first_name,
       last_name,
@@ -126,30 +145,38 @@ exports.register = async (req, res) => {
       password,
       phone
     });
+    console.log('[REGISTER] User created successfully with ID:', userId);
 
     // Send welcome email
     await sendEmail(email, 'welcome', {
       firstName: first_name
     });
 
-    // Auto-login the user
-    req.session.userId = userId;
-    req.session.userEmail = email;
-
-    // Regenerate session ID for security
+    // Regenerate session ID for security before setting user data
+    console.log('[REGISTER] Regenerating session...');
     req.session.regenerate((err) => {
       if (err) {
-        console.error('Session regeneration error:', err);
-        req.session.errorMessage = 'Registration successful but login failed. Please try logging in.';
-        return res.redirect('/login');
+        console.error('[REGISTER] Session regeneration error:', err);
+        // Can't use session here as it may be destroyed, redirect to login page
+        return res.redirect('/login?message=registration_complete');
       }
 
-      // Restore user data after regeneration
+      console.log('[REGISTER] Session regenerated, setting user data...');
+      // Set user data in the new session
       req.session.userId = userId;
       req.session.userEmail = email;
       req.session.successMessage = 'Registration successful! Welcome to LibaraNHS.';
 
-      res.redirect('/dashboard');
+      // Explicitly save session before redirecting
+      console.log('[REGISTER] Saving session...');
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('[REGISTER] Session save error:', saveErr);
+          return res.redirect('/login?message=registration_complete');
+        }
+        console.log('[REGISTER] Session saved, redirecting to dashboard. UserID:', userId);
+        res.redirect('/dashboard');
+      });
     });
   } catch (error) {
     console.error('Registration error:', error);
