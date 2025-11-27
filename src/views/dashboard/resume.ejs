@@ -138,7 +138,6 @@
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
             submitButton.textContent = '🔄 Processing and storing...';
-            submitButton.textContent = '📤 Uploading...';
 
             try {
                 const response = await fetch('/dashboard/resume/upload', {
@@ -149,7 +148,6 @@
 
                 if (result.success) {
                     alert('✓ Resume uploaded and stored securely!');
-                    alert('✓ Resume uploaded successfully!');
                     window.location.reload();
                 } else {
                     alert('✗ Upload failed: ' + (result.message || 'Unknown error'));

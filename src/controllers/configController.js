@@ -208,10 +208,38 @@ exports.duplicate = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    const configId = req.params.id;
+    const configId = parseInt(req.params.id);
     const userId = req.session.userId;
 
-    await ApplicationConfig.delete(configId, userId);
+    console.log('[CONFIG DELETE] Request received - Config ID:', configId, 'User ID:', userId);
+
+    if (!configId || isNaN(configId)) {
+      console.log('[CONFIG DELETE] Invalid config ID');
+      if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid configuration ID'
+        });
+      }
+      req.session.errorMessage = 'Invalid configuration ID';
+      return res.redirect('/dashboard/config/saved');
+    }
+
+    const success = await ApplicationConfig.delete(configId, userId);
+
+    if (!success) {
+      console.log('[CONFIG DELETE] Delete failed - config not found or unauthorized');
+      if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        return res.status(404).json({
+          success: false,
+          message: 'Configuration not found or you do not have permission to delete it'
+        });
+      }
+      req.session.errorMessage = 'Configuration not found or you do not have permission to delete it';
+      return res.redirect('/dashboard/config/saved');
+    }
+
+    console.log('[CONFIG DELETE] Delete successful');
 
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.json({
@@ -223,12 +251,12 @@ exports.delete = async (req, res) => {
     req.session.successMessage = 'Configuration deleted successfully';
     res.redirect('/dashboard/config/saved');
   } catch (error) {
-    console.error('Config delete error:', error);
+    console.error('[CONFIG DELETE] Exception:', error);
 
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.status(500).json({
         success: false,
-        message: 'An error occurred while deleting the configuration'
+        message: 'An error occurred while deleting the configuration: ' + error.message
       });
     }
 
