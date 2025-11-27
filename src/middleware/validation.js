@@ -151,6 +151,9 @@ const validate = (validationType) => {
       return next();
     }
 
+    // Log validation errors for debugging
+    console.log(`[VALIDATION] ${validationType} failed:`, errors.array().map(e => `${e.param}: ${e.msg}`));
+
     // If AJAX request, return JSON
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.status(400).json({
@@ -162,7 +165,19 @@ const validate = (validationType) => {
     // Otherwise, redirect back with errors
     req.session.errors = errors.array();
     req.session.oldInput = req.body;
-    return res.redirect('back');
+
+    // Redirect to the appropriate page based on validation type
+    const redirectMap = {
+      'register': '/register',
+      'login': '/login',
+      'contact': '/contact',
+      'updateProfile': '/dashboard/settings',
+      'changePassword': '/dashboard/settings',
+      'nhsCredentials': '/dashboard/settings'
+    };
+
+    const redirectUrl = redirectMap[validationType] || req.get('Referer') || '/';
+    return res.redirect(redirectUrl);
   };
 };
 
