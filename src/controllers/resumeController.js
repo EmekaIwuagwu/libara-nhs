@@ -1,7 +1,11 @@
 const Resume = require('../models/Resume');
-const { uploadFile } = require('../config/cloudinary');
 const path = require('path');
 const fs = require('fs').promises;
+const zlib = require('zlib');
+const { promisify } = require('util');
+
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
 
 exports.index = async (req, res) => {
   try {
@@ -37,15 +41,21 @@ exports.upload = async (req, res) => {
     const userId = req.session.userId;
     const file = req.file;
 
-    console.log('[RESUME] Uploading to Cloudinary:', file.originalname);
+    console.log('[RESUME] Processing upload:', file.originalname);
+    console.log('[RESUME] Original file size:', file.size, 'bytes');
 
-    // Upload to Cloudinary
-    const cloudinaryResult = await uploadFile(file.path, {
-      folder: 'libaranhs/resumes',
-      public_id: `user-${userId}-${Date.now()}`
-    });
+    // Read the file as buffer
+    const fileBuffer = await fs.readFile(file.path);
 
-    console.log('[RESUME] Cloudinary upload successful:', cloudinaryResult.public_id);
+    // Compress the file using gzip
+    console.log('[RESUME] Compressing file...');
+    const compressedBuffer = await gzip(fileBuffer, { level: 9 });
+    console.log('[RESUME] Compressed size:', compressedBuffer.length, 'bytes');
+    console.log('[RESUME] Compression ratio:', ((1 - compressedBuffer.length / file.size) * 100).toFixed(2) + '%');
+
+    // Convert compressed buffer to base64
+    const base64Data = compressedBuffer.toString('base64');
+    console.log('[RESUME] Base64 length:', base64Data.length, 'characters');
 
     // Delete local temp file
     try {
@@ -55,29 +65,29 @@ exports.upload = async (req, res) => {
       console.error('[RESUME] Error deleting temp file:', error);
     }
 
-    // Create resume record in database
+    // Create resume record in database with compressed base64 data
     const resumeId = await Resume.create({
       user_id: userId,
-      filename: cloudinaryResult.public_id,
+      filename: `resume-${userId}-${Date.now()}`,
       original_name: file.originalname,
-      file_path: null, // No longer storing locally
-      file_size: cloudinaryResult.bytes,
+      file_path: null,
+      file_size: file.size,
       mime_type: file.mimetype,
-      cloudinary_url: cloudinaryResult.url,
-      cloudinary_public_id: cloudinaryResult.public_id,
-      cloudinary_secure_url: cloudinaryResult.secure_url
+      file_data: base64Data,
+      is_compressed: true
     });
 
     console.log('[RESUME] Resume record created:', resumeId);
 
     res.json({
       success: true,
-      message: 'Resume uploaded successfully to cloud storage',
+      message: 'Resume uploaded and compressed successfully',
       resume: {
         id: resumeId,
         filename: file.originalname,
-        size: cloudinaryResult.bytes,
-        url: cloudinaryResult.secure_url
+        size: file.size,
+        compressed_size: compressedBuffer.length,
+        compression_ratio: ((1 - compressedBuffer.length / file.size) * 100).toFixed(2) + '%'
       }
     });
   } catch (error) {
@@ -111,82 +121,37 @@ exports.preview = async (req, res) => {
     }
 
     console.log('[RESUME] Preview request for resume ID:', resumeId);
-    console.log('[RESUME] Cloudinary URL:', resume.cloudinary_secure_url);
 
-    // If stored on Cloudinary, fetch and serve with proper headers
-    if (resume.cloudinary_secure_url) {
-      console.log('[RESUME] Fetching from Cloudinary and serving with proper headers');
+    // If stored as base64 in database
+    if (resume.file_data) {
+      console.log('[RESUME] Serving from base64 database storage');
 
-      return new Promise((resolve, reject) => {
-        const https = require('https');
-        const url = require('url');
+      try {
+        // Convert base64 back to buffer
+        const compressedBuffer = Buffer.from(resume.file_data, 'base64');
+        console.log('[RESUME] Compressed buffer size:', compressedBuffer.length);
 
-        const parsedUrl = url.parse(resume.cloudinary_secure_url);
-        const chunks = [];
+        // Decompress if compressed
+        let fileBuffer;
+        if (resume.is_compressed) {
+          console.log('[RESUME] Decompressing file...');
+          fileBuffer = await gunzip(compressedBuffer);
+          console.log('[RESUME] Decompressed size:', fileBuffer.length);
+        } else {
+          fileBuffer = compressedBuffer;
+        }
 
-        const request = https.get({
-          hostname: parsedUrl.hostname,
-          path: parsedUrl.path,
-          timeout: 10000
-        }, (response) => {
-          console.log('[RESUME] Cloudinary response status:', response.statusCode);
+        // Set proper headers for inline PDF viewing
+        res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
+        res.setHeader('Content-Length', fileBuffer.length);
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
 
-          if (response.statusCode === 401) {
-            console.error('[RESUME] Cloudinary 401 - File access restricted or wrong resource type');
-            console.error('[RESUME] This usually happens with old raw uploads. Try deleting and re-uploading.');
-            res.status(502).send(`
-              <html>
-                <body style="font-family: sans-serif; padding: 40px; text-align: center;">
-                  <h2>⚠️ Unable to Load Resume</h2>
-                  <p>This resume was uploaded with an older format that has access restrictions.</p>
-                  <p><strong>Solution:</strong> Delete this resume and upload it again.</p>
-                  <p style="margin-top: 30px;">
-                    <a href="/dashboard/resume" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                      Back to Resumes
-                    </a>
-                  </p>
-                </body>
-              </html>
-            `);
-            return resolve();
-          }
-
-          if (response.statusCode !== 200) {
-            console.error('[RESUME] Cloudinary returned error:', response.statusCode);
-            res.status(502).send('Error fetching resume from cloud storage');
-            return resolve();
-          }
-
-          response.on('data', (chunk) => chunks.push(chunk));
-
-          response.on('end', () => {
-            const buffer = Buffer.concat(chunks);
-            console.log('[RESUME] Successfully fetched from Cloudinary, size:', buffer.length);
-
-            // Set proper headers for inline PDF viewing
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
-            res.setHeader('Content-Length', buffer.length);
-            res.setHeader('Cache-Control', 'public, max-age=31536000');
-
-            res.send(buffer);
-            resolve();
-          });
-        });
-
-        request.on('error', (error) => {
-          console.error('[RESUME] Error fetching from Cloudinary:', error.message);
-          res.status(502).send('Error fetching resume from cloud storage');
-          resolve();
-        });
-
-        request.on('timeout', () => {
-          console.error('[RESUME] Timeout fetching from Cloudinary');
-          request.destroy();
-          res.status(504).send('Timeout fetching resume from cloud storage');
-          resolve();
-        });
-      });
+        return res.send(fileBuffer);
+      } catch (error) {
+        console.error('[RESUME] Error processing base64 data:', error);
+        return res.status(500).send('Error processing resume data');
+      }
     }
 
     // Fallback to local file (for old resumes)
@@ -198,7 +163,7 @@ exports.preview = async (req, res) => {
       return res.send(fileBuffer);
     }
 
-    console.log('[RESUME] No file found for resume');
+    console.log('[RESUME] No file data found for resume');
     return res.status(404).send('Resume file not found');
   } catch (error) {
     console.error('[RESUME] Preview error:', error);
@@ -220,13 +185,39 @@ exports.download = async (req, res) => {
       return res.status(404).send('Resume not found');
     }
 
-    // If stored on Cloudinary, redirect to secure URL
-    if (resume.cloudinary_secure_url) {
-      return res.redirect(resume.cloudinary_secure_url);
+    console.log('[RESUME] Download request for resume ID:', resumeId);
+
+    // If stored as base64 in database
+    if (resume.file_data) {
+      console.log('[RESUME] Serving download from base64 database storage');
+
+      try {
+        // Convert base64 back to buffer
+        const compressedBuffer = Buffer.from(resume.file_data, 'base64');
+
+        // Decompress if compressed
+        let fileBuffer;
+        if (resume.is_compressed) {
+          fileBuffer = await gunzip(compressedBuffer);
+        } else {
+          fileBuffer = compressedBuffer;
+        }
+
+        // Set proper headers for download
+        res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${resume.original_name}"`);
+        res.setHeader('Content-Length', fileBuffer.length);
+
+        return res.send(fileBuffer);
+      } catch (error) {
+        console.error('[RESUME] Error processing base64 data:', error);
+        return res.status(500).send('Error processing resume data');
+      }
     }
 
     // Fallback to local file (for old resumes)
     if (resume.file_path) {
+      console.log('[RESUME] Serving local file download:', resume.file_path);
       return res.download(resume.file_path, resume.original_name);
     }
 
@@ -310,7 +301,7 @@ exports.delete = async (req, res) => {
       });
     }
 
-    console.log('[RESUME DELETE] SUCCESS - Resume ID', resumeId, 'deleted');
+    console.log('[RESUME DELETE] SUCCESS - Resume ID', resumeId, 'deleted from database');
     console.log('[RESUME DELETE] ========================================');
     res.setHeader('Content-Type', 'application/json');
     return res.status(200).json({

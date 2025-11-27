@@ -1,5 +1,4 @@
 const { query } = require('../config/database');
-const { deleteFile } = require('../config/cloudinary');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -12,9 +11,8 @@ class Resume {
       file_path,
       file_size,
       mime_type,
-      cloudinary_url,
-      cloudinary_public_id,
-      cloudinary_secure_url
+      file_data,
+      is_compressed
     } = resumeData;
 
     // Check if this is the user's first resume, make it default
@@ -24,9 +22,9 @@ class Resume {
     const sql = `
       INSERT INTO resumes (
         user_id, filename, original_name, file_path, file_size, mime_type,
-        cloudinary_url, cloudinary_public_id, cloudinary_secure_url, is_default
+        file_data, is_compressed, is_default
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await query(sql, [
@@ -36,9 +34,8 @@ class Resume {
       file_path || null,
       file_size,
       mime_type,
-      cloudinary_url || null,
-      cloudinary_public_id || null,
-      cloudinary_secure_url || null,
+      file_data || null,
+      is_compressed !== undefined ? is_compressed : true,
       isDefault
     ]);
 
@@ -52,8 +49,13 @@ class Resume {
   }
 
   static async findByUserId(userId) {
+    // Don't select file_data in list view to reduce memory usage
     const sql = `
-      SELECT * FROM resumes
+      SELECT
+        id, user_id, filename, original_name, file_path, file_size, mime_type,
+        is_compressed, is_default, created_at, updated_at,
+        cloudinary_url, cloudinary_public_id, cloudinary_secure_url
+      FROM resumes
       WHERE user_id = ?
       ORDER BY is_default DESC, created_at DESC
     `;
@@ -82,41 +84,36 @@ class Resume {
   }
 
   static async delete(id, userId) {
-    // Get the resume file path
+    // Get the resume
     const resume = await this.findById(id);
     if (!resume || resume.user_id !== userId) {
       return false;
     }
 
-    // Delete from Cloudinary if it exists
-    if (resume.cloudinary_public_id) {
-      try {
-        await deleteFile(resume.cloudinary_public_id);
-        console.log('[RESUME] Deleted from Cloudinary:', resume.cloudinary_public_id);
-      } catch (error) {
-        console.error('[RESUME] Error deleting from Cloudinary:', error);
-      }
-    }
+    console.log('[RESUME DELETE] Starting delete for ID:', id);
 
     // Delete the local file if it exists (for old resumes)
     if (resume.file_path) {
       try {
         await fs.unlink(resume.file_path);
-        console.log('[RESUME] Deleted local file:', resume.file_path);
+        console.log('[RESUME DELETE] Deleted local file:', resume.file_path);
       } catch (error) {
-        console.error('[RESUME] Error deleting local file:', error);
+        console.error('[RESUME DELETE] Error deleting local file:', error);
       }
     }
 
-    // Delete from database
+    // Delete from database (base64 data will be deleted automatically)
     const sql = 'DELETE FROM resumes WHERE id = ? AND user_id = ?';
     const result = await query(sql, [id, userId]);
+
+    console.log('[RESUME DELETE] Database delete result:', result);
 
     // If this was the default, set another one as default
     if (resume.is_default) {
       const remainingResumes = await this.findByUserId(userId);
       if (remainingResumes.length > 0) {
         await this.setDefault(remainingResumes[0].id, userId);
+        console.log('[RESUME DELETE] Set new default resume:', remainingResumes[0].id);
       }
     }
 
