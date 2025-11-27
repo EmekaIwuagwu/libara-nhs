@@ -71,6 +71,22 @@ const deleteFile = async (publicId) => {
   }
 };
 
+// Helper function to get signed URL for raw files
+const getSignedUrl = (publicId, resourceType = 'raw') => {
+  try {
+    // Generate a signed URL that bypasses access restrictions
+    return cloudinary.url(publicId, {
+      resource_type: resourceType,
+      secure: true,
+      sign_url: true,
+      type: 'upload'
+    });
+  } catch (error) {
+    console.error('[CLOUDINARY] Error generating signed URL:', error);
+    return null;
+  }
+};
+
 // Helper function to get secure URL
 const getSecureUrl = (publicId, options = {}) => {
   return cloudinary.url(publicId, {
@@ -85,5 +101,6 @@ module.exports = {
   testConnection,
   uploadFile,
   deleteFile,
-  getSecureUrl
+  getSecureUrl,
+  getSignedUrl
 };
