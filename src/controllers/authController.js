@@ -28,19 +28,19 @@ exports.login = async (req, res) => {
   const { username, password, remember } = req.body;
 
   try {
-    console.log('✓ Login attempt for:', username);
+    console.log('[LOGIN] Attempting login for:', username);
 
     // Find user by username or email
     const user = await User.findByUsernameOrEmail(username);
 
     if (!user) {
-      console.log('✗ User not found:', username);
+      console.log('[LOGIN] User not found:', username);
       req.session.errorMessage = 'Invalid username or password';
       req.session.oldInput = { username };
       return res.redirect('/login');
     }
 
-    console.log('✓ User found. ID:', user.id);
+    console.log('[LOGIN] User found, verifying password...');
 
     // Verify password
     const isValidPassword = await User.verifyPassword(password, user.password);
@@ -86,7 +86,7 @@ exports.login = async (req, res) => {
       });
     });
   } catch (error) {
-    console.error('✗ Login error:', error);
+    console.error('[LOGIN] Login error:', error);
     req.session.errorMessage = 'An error occurred during login. Please try again.';
     res.redirect('/login');
   }
@@ -180,8 +180,8 @@ exports.register = async (req, res) => {
       });
     });
   } catch (error) {
-    console.error('✗ Registration error:', error);
-    req.session.errorMessage = `Registration failed: ${error.message}`;
+    console.error('[REGISTER] Registration error:', error);
+    req.session.errorMessage = 'An error occurred during registration. Please try again.';
     req.session.oldInput = req.body;
     res.redirect('/register');
   }
