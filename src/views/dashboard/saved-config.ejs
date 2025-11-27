@@ -48,11 +48,11 @@
 
                             <div class="flex gap-2 flex-wrap">
                                 <a href="/dashboard/config/<%= config.id %>/edit" class="text-sm btn btn-secondary">Edit</a>
-                                <button onclick="toggleActive(<%= config.id %>)" class="text-sm btn btn-secondary">
+                                <button data-action="toggle" data-config-id="<%= config.id %>" class="text-sm btn btn-secondary">
                                     <%= config.is_active ? 'Deactivate' : 'Activate' %>
                                 </button>
-                                <button onclick="duplicateConfig(<%= config.id %>)" class="text-sm text-primary hover:text-primary-dark">Duplicate</button>
-                                <button onclick="deleteConfig(<%= config.id %>)" class="text-sm text-red-600 hover:text-red-800">Delete</button>
+                                <button data-action="duplicate" data-config-id="<%= config.id %>" class="text-sm text-primary hover:text-primary-dark">Duplicate</button>
+                                <button data-action="delete" data-config-id="<%= config.id %>" class="text-sm text-red-600 hover:text-red-800">Delete</button>
                             </div>
                         </div>
                     <% }); %>
@@ -70,22 +70,80 @@
 
     <script src="/js/main.js"></script>
     <script>
-        function toggleActive(id) {
-            fetch(`/dashboard/config/${id}/toggle`, { method: 'POST' })
-                .then(() => window.location.reload());
-        }
+        // Event delegation for config actions
+        document.addEventListener('click', async function(e) {
+            const button = e.target.closest('[data-action]');
+            if (!button) return;
 
-        function duplicateConfig(id) {
-            fetch(`/dashboard/config/${id}/duplicate`, { method: 'POST' })
-                .then(() => window.location.reload());
-        }
+            const action = button.dataset.action;
+            const configId = button.dataset.configId;
 
-        function deleteConfig(id) {
-            if (confirm('Are you sure you want to delete this configuration?')) {
-                fetch(`/dashboard/config/${id}`, { method: 'DELETE' })
-                    .then(() => window.location.reload());
+            console.log('[CLIENT] Config action:', action, 'ID:', configId);
+
+            if (action === 'toggle') {
+                try {
+                    const response = await fetch(`/dashboard/config/${configId}/toggle`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to toggle configuration');
+                    }
+                } catch (error) {
+                    console.error('[CLIENT] Toggle error:', error);
+                    alert('An error occurred');
+                }
+            } else if (action === 'duplicate') {
+                try {
+                    const response = await fetch(`/dashboard/config/${configId}/duplicate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to duplicate configuration');
+                    }
+                } catch (error) {
+                    console.error('[CLIENT] Duplicate error:', error);
+                    alert('An error occurred');
+                }
+            } else if (action === 'delete') {
+                if (!confirm('Are you sure you want to delete this configuration?')) {
+                    return;
+                }
+
+                console.log('[CLIENT] Sending DELETE request to:', `/dashboard/config/${configId}`);
+
+                try {
+                    const response = await fetch(`/dashboard/config/${configId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    console.log('[CLIENT] Delete response status:', response.status);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('[CLIENT] Delete successful:', data);
+                        alert('Configuration deleted successfully!');
+                        window.location.reload();
+                    } else {
+                        const data = await response.json();
+                        console.error('[CLIENT] Delete failed:', data);
+                        alert('Failed to delete configuration: ' + (data.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('[CLIENT] Delete error:', error);
+                    alert('An error occurred while deleting: ' + error.message);
+                }
             }
-        }
+        });
     </script>
 </body>
 </html>
