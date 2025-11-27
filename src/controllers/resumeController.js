@@ -81,50 +81,6 @@ exports.upload = async (req, res) => {
   }
 };
 
-exports.preview = async (req, res) => {
-  try {
-    const resumeId = req.params.id;
-    const userId = req.session.userId;
-
-    const resume = await Resume.findById(resumeId);
-
-    if (!resume || resume.user_id !== userId) {
-      console.log('[RESUME PREVIEW] Resume not found or unauthorized');
-      return res.status(404).send('Resume not found');
-    }
-
-    if (!resume.file_path) {
-      console.log('[RESUME PREVIEW] No file path for resume:', resumeId);
-      return res.status(404).send('Resume file not found');
-    }
-
-    console.log('[RESUME PREVIEW] Serving file:', resume.file_path);
-
-    // Check if file exists
-    try {
-      await fs.access(resume.file_path);
-    } catch (error) {
-      console.error('[RESUME PREVIEW] File not found on disk:', resume.file_path);
-      return res.status(404).send('Resume file not found on server');
-    }
-
-    // Set headers for inline PDF viewing
-    res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
-
-    // Read and send file
-    const fileBuffer = await fs.readFile(resume.file_path);
-    console.log('[RESUME PREVIEW] File sent, size:', fileBuffer.length, 'bytes');
-    return res.send(fileBuffer);
-  } catch (error) {
-    console.error('[RESUME PREVIEW] Error:', error);
-    res.status(500).send('An error occurred while previewing the resume');
-  }
-};
-
-// Alias for backward compatibility
-exports.view = exports.preview;
-
 exports.download = async (req, res) => {
   try {
     const resumeId = req.params.id;
