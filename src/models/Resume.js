@@ -1,5 +1,4 @@
 const { query } = require('../config/database');
-const { deleteFile } = require('../config/cloudinary');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -11,10 +10,7 @@ class Resume {
       original_name,
       file_path,
       file_size,
-      mime_type,
-      cloudinary_url,
-      cloudinary_public_id,
-      cloudinary_secure_url
+      mime_type
     } = resumeData;
 
     // Check if this is the user's first resume, make it default
@@ -23,25 +19,22 @@ class Resume {
 
     const sql = `
       INSERT INTO resumes (
-        user_id, filename, original_name, file_path, file_size, mime_type,
-        cloudinary_url, cloudinary_public_id, cloudinary_secure_url, is_default
+        user_id, filename, original_name, file_path, file_size, mime_type, is_default
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await query(sql, [
       user_id,
       filename,
       original_name,
-      file_path || null,
+      file_path,
       file_size,
       mime_type,
-      cloudinary_url || null,
-      cloudinary_public_id || null,
-      cloudinary_secure_url || null,
       isDefault
     ]);
 
+    console.log('[RESUME MODEL] Created resume with ID:', result.insertId);
     return result.insertId;
   }
 
@@ -82,45 +75,54 @@ class Resume {
   }
 
   static async delete(id, userId) {
-    // Get the resume file path
+    console.log('[RESUME MODEL] Delete called - ID:', id, 'User:', userId);
+
+    // Get the resume
     const resume = await this.findById(id);
-    if (!resume || resume.user_id !== userId) {
+
+    if (!resume) {
+      console.log('[RESUME MODEL] Resume not found');
       return false;
     }
 
-    // Delete from Cloudinary if it exists
-    if (resume.cloudinary_public_id) {
-      try {
-        await deleteFile(resume.cloudinary_public_id);
-        console.log('[RESUME] Deleted from Cloudinary:', resume.cloudinary_public_id);
-      } catch (error) {
-        console.error('[RESUME] Error deleting from Cloudinary:', error);
-      }
+    if (resume.user_id !== userId) {
+      console.log('[RESUME MODEL] User ID mismatch. Resume belongs to:', resume.user_id, 'Requested by:', userId);
+      return false;
     }
 
-    // Delete the local file if it exists (for old resumes)
+    console.log('[RESUME MODEL] Resume found, deleting file:', resume.file_path);
+
+    // Delete the local file if it exists
     if (resume.file_path) {
       try {
         await fs.unlink(resume.file_path);
-        console.log('[RESUME] Deleted local file:', resume.file_path);
+        console.log('[RESUME MODEL] File deleted successfully');
       } catch (error) {
-        console.error('[RESUME] Error deleting local file:', error);
+        console.error('[RESUME MODEL] Error deleting file:', error.message);
+        // Continue even if file delete fails (file might already be gone)
       }
     }
 
     // Delete from database
+    console.log('[RESUME MODEL] Deleting from database...');
     const sql = 'DELETE FROM resumes WHERE id = ? AND user_id = ?';
     const result = await query(sql, [id, userId]);
 
+    console.log('[RESUME MODEL] Database delete result, affected rows:', result.affectedRows);
+
     // If this was the default, set another one as default
     if (resume.is_default) {
+      console.log('[RESUME MODEL] Was default resume, reassigning...');
       const remainingResumes = await this.findByUserId(userId);
       if (remainingResumes.length > 0) {
         await this.setDefault(remainingResumes[0].id, userId);
+        console.log('[RESUME MODEL] Set new default resume:', remainingResumes[0].id);
       }
     }
 
-    return result.affectedRows > 0;
+    const success = result.affectedRows > 0;
+    console.log('[RESUME MODEL] Delete completed, success:', success);
+    return success;
   }
 
   static async count(userId) {

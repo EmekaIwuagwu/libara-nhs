@@ -9,7 +9,6 @@ router.use(isAuthenticated);
 
 router.get('/', resumeController.index);
 router.post('/upload', upload.single('resume'), handleUploadError, resumeController.upload);
-router.get('/:id/preview', resumeController.preview);
 router.get('/:id/download', resumeController.download);
 router.post('/:id/set-default', resumeController.setDefault);
 router.delete('/:id', resumeController.delete);
