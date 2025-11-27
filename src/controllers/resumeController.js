@@ -131,6 +131,26 @@ exports.preview = async (req, res) => {
         }, (response) => {
           console.log('[RESUME] Cloudinary response status:', response.statusCode);
 
+          if (response.statusCode === 401) {
+            console.error('[RESUME] Cloudinary 401 - File access restricted or wrong resource type');
+            console.error('[RESUME] This usually happens with old raw uploads. Try deleting and re-uploading.');
+            res.status(502).send(`
+              <html>
+                <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+                  <h2>⚠️ Unable to Load Resume</h2>
+                  <p>This resume was uploaded with an older format that has access restrictions.</p>
+                  <p><strong>Solution:</strong> Delete this resume and upload it again.</p>
+                  <p style="margin-top: 30px;">
+                    <a href="/dashboard/resume" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                      Back to Resumes
+                    </a>
+                  </p>
+                </body>
+              </html>
+            `);
+            return resolve();
+          }
+
           if (response.statusCode !== 200) {
             console.error('[RESUME] Cloudinary returned error:', response.statusCode);
             res.status(502).send('Error fetching resume from cloud storage');
