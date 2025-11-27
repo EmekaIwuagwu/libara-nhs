@@ -45,7 +45,7 @@
             <div class="card">
                 <h2 class="text-2xl font-semibold text-slate-800 mb-4">Your Resumes</h2>
                 <% if (resumes && resumes.length > 0) { %>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <% resumes.forEach(resume => { %>
                             <div class="border rounded-lg p-4 hover:shadow-md transition bg-white">
                                 <div class="flex items-start justify-between mb-4">
@@ -70,6 +70,10 @@
                                                 ☁️ Cloud Storage
                                             </span>
                                         <% } %>
+                                        <button onclick="deleteResume(<%= resume.id %>)"
+                                                class="text-xs text-red-600 hover:text-red-800 font-medium">
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>
 
