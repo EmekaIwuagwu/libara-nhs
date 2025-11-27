@@ -1,7 +1,4 @@
 const { query } = require('../config/database');
-const { deleteFile } = require('../config/cloudinary');
-const fs = require('fs').promises;
-const path = require('path');
 
 class Resume {
   static async create(resumeData) {
@@ -12,6 +9,8 @@ class Resume {
       file_path,
       file_size,
       mime_type,
+      base64_data,
+      compression_type,
       cloudinary_url,
       cloudinary_public_id,
       cloudinary_secure_url
@@ -24,9 +23,10 @@ class Resume {
     const sql = `
       INSERT INTO resumes (
         user_id, filename, original_name, file_path, file_size, mime_type,
+        base64_data, compression_type,
         cloudinary_url, cloudinary_public_id, cloudinary_secure_url, is_default
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await query(sql, [
@@ -36,6 +36,8 @@ class Resume {
       file_path || null,
       file_size,
       mime_type,
+      base64_data || null,
+      compression_type || 'gzip',
       cloudinary_url || null,
       cloudinary_public_id || null,
       cloudinary_secure_url || null,
@@ -82,35 +84,17 @@ class Resume {
   }
 
   static async delete(id, userId) {
-    // Get the resume file path
+    // Get the resume
     const resume = await this.findById(id);
     if (!resume || resume.user_id !== userId) {
       return false;
     }
 
-    // Delete from Cloudinary if it exists
-    if (resume.cloudinary_public_id) {
-      try {
-        await deleteFile(resume.cloudinary_public_id);
-        console.log('[RESUME] Deleted from Cloudinary:', resume.cloudinary_public_id);
-      } catch (error) {
-        console.error('[RESUME] Error deleting from Cloudinary:', error);
-      }
-    }
-
-    // Delete the local file if it exists
-    if (resume.file_path) {
-      try {
-        await fs.unlink(resume.file_path);
-        console.log('[RESUME] Deleted local file:', resume.file_path);
-      } catch (error) {
-        console.error('[RESUME] Error deleting local file:', error);
-      }
-    }
-
-    // Delete from database
+    // Delete from database (base64 data is stored in DB, so this removes everything)
     const sql = 'DELETE FROM resumes WHERE id = ? AND user_id = ?';
     await query(sql, [id, userId]);
+
+    console.log('[RESUME] Deleted resume from database:', id);
 
     // If this was the default, set another one as default
     if (resume.is_default) {

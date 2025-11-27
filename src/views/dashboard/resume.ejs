@@ -65,9 +65,9 @@
                                                 ✓ Default Resume
                                             </span>
                                         <% } %>
-                                        <% if (resume.cloudinary_url) { %>
-                                            <span class="inline-block px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full mt-2 ml-1">
-                                                ☁️ Cloud Storage
+                                        <% if (resume.base64_data) { %>
+                                            <span class="inline-block px-2 py-1 text-xs font-semibold text-purple-800 bg-purple-100 rounded-full mt-2 ml-1">
+                                                🔒 Secure Storage
                                             </span>
                                         <% } %>
                                     </div>
@@ -149,7 +149,7 @@
             const submitButton = e.target.querySelector('button[type="submit"]');
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
-            submitButton.textContent = '☁️ Uploading to cloud...';
+            submitButton.textContent = '🔄 Processing and storing...';
 
             try {
                 const response = await fetch('/dashboard/resume/upload', {
@@ -159,7 +159,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert('✓ Resume uploaded successfully to cloud storage!');
+                    alert('✓ Resume uploaded and stored securely!');
                     window.location.reload();
                 } else {
                     alert('✗ Upload failed: ' + (result.message || 'Unknown error'));

@@ -1,7 +1,11 @@
 const Resume = require('../models/Resume');
-const { uploadFile } = require('../config/cloudinary');
 const path = require('path');
 const fs = require('fs').promises;
+const zlib = require('zlib');
+const { promisify } = require('util');
+
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
 
 exports.index = async (req, res) => {
   try {
@@ -37,15 +41,20 @@ exports.upload = async (req, res) => {
     const userId = req.session.userId;
     const file = req.file;
 
-    console.log('[RESUME] Uploading to Cloudinary:', file.originalname);
+    console.log('[RESUME] Processing file:', file.originalname);
 
-    // Upload to Cloudinary
-    const cloudinaryResult = await uploadFile(file.path, {
-      folder: 'libaranhs/resumes',
-      public_id: `user-${userId}-${Date.now()}`
-    });
+    // Read the file as buffer
+    const fileBuffer = await fs.readFile(file.path);
+    console.log('[RESUME] File size:', fileBuffer.length, 'bytes');
 
-    console.log('[RESUME] Cloudinary upload successful:', cloudinaryResult.public_id);
+    // Compress with gzip
+    const compressedBuffer = await gzip(fileBuffer);
+    console.log('[RESUME] Compressed size:', compressedBuffer.length, 'bytes',
+                `(${Math.round((compressedBuffer.length / fileBuffer.length) * 100)}% of original)`);
+
+    // Convert to base64
+    const base64Data = compressedBuffer.toString('base64');
+    console.log('[RESUME] Base64 encoded successfully');
 
     // Delete local temp file
     try {
@@ -55,29 +64,28 @@ exports.upload = async (req, res) => {
       console.error('[RESUME] Error deleting temp file:', error);
     }
 
-    // Create resume record in database
+    // Create resume record in database with base64 data
     const resumeId = await Resume.create({
       user_id: userId,
-      filename: cloudinaryResult.public_id,
+      filename: `resume-${Date.now()}`,
       original_name: file.originalname,
-      file_path: null, // No longer storing locally
-      file_size: cloudinaryResult.bytes,
+      file_path: null,
+      file_size: file.size,
       mime_type: file.mimetype,
-      cloudinary_url: cloudinaryResult.url,
-      cloudinary_public_id: cloudinaryResult.public_id,
-      cloudinary_secure_url: cloudinaryResult.secure_url
+      base64_data: base64Data,
+      compression_type: 'gzip'
     });
 
-    console.log('[RESUME] Resume record created:', resumeId);
+    console.log('[RESUME] Resume record created with base64 storage:', resumeId);
 
     res.json({
       success: true,
-      message: 'Resume uploaded successfully to cloud storage',
+      message: 'Resume uploaded successfully and stored securely',
       resume: {
         id: resumeId,
         filename: file.originalname,
-        size: cloudinaryResult.bytes,
-        url: cloudinaryResult.secure_url
+        size: file.size,
+        compressed_size: compressedBuffer.length
       }
     });
   } catch (error) {
@@ -110,14 +118,24 @@ exports.download = async (req, res) => {
       return res.status(404).send('Resume not found');
     }
 
-    // If stored on Cloudinary, redirect to secure URL
-    if (resume.cloudinary_secure_url) {
-      return res.redirect(resume.cloudinary_secure_url);
-    }
+    // If stored as base64, decode and send
+    if (resume.base64_data) {
+      console.log('[RESUME] Decoding base64 data for download');
 
-    // Fallback to local file (for old resumes)
-    if (resume.file_path) {
-      return res.download(resume.file_path, resume.original_name);
+      // Decode from base64
+      const compressedBuffer = Buffer.from(resume.base64_data, 'base64');
+
+      // Decompress
+      const fileBuffer = await gunzip(compressedBuffer);
+
+      console.log('[RESUME] Decompressed successfully, sending file');
+
+      // Set headers for download
+      res.setHeader('Content-Type', resume.mime_type);
+      res.setHeader('Content-Disposition', `attachment; filename="${resume.original_name}"`);
+      res.setHeader('Content-Length', fileBuffer.length);
+
+      return res.send(fileBuffer);
     }
 
     return res.status(404).send('Resume file not found');
@@ -138,16 +156,24 @@ exports.preview = async (req, res) => {
       return res.status(404).send('Resume not found');
     }
 
-    // If stored on Cloudinary, use direct secure URL
-    // Modern browsers will display PDF inline automatically
-    if (resume.cloudinary_secure_url) {
-      console.log('[RESUME] Preview URL:', resume.cloudinary_secure_url);
-      return res.redirect(resume.cloudinary_secure_url);
-    }
+    // If stored as base64, decode and display inline
+    if (resume.base64_data) {
+      console.log('[RESUME] Decoding base64 data for preview');
 
-    // Fallback to local file (for old resumes)
-    if (resume.file_path) {
-      return res.sendFile(path.resolve(resume.file_path));
+      // Decode from base64
+      const compressedBuffer = Buffer.from(resume.base64_data, 'base64');
+
+      // Decompress
+      const fileBuffer = await gunzip(compressedBuffer);
+
+      console.log('[RESUME] Decompressed successfully, displaying inline');
+
+      // Set headers for inline display
+      res.setHeader('Content-Type', resume.mime_type);
+      res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
+      res.setHeader('Content-Length', fileBuffer.length);
+
+      return res.send(fileBuffer);
     }
 
     return res.status(404).send('Resume file not found');
