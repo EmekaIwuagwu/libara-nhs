@@ -42,8 +42,11 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
+      // Remove upgrade-insecure-requests since we're using HTTP only
     },
   },
+  // Disable HSTS since we don't have HTTPS configured
+  hsts: false,
 }));
 
 // Compression
