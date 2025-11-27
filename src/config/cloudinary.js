@@ -24,10 +24,14 @@ const testConnection = async () => {
 // Helper function to upload file
 const uploadFile = async (filePath, options = {}) => {
   try {
+    // For PDFs, use 'auto' resource type so Cloudinary can handle them properly
+    // This allows PDFs to be viewable in browsers
     const result = await cloudinary.uploader.upload(filePath, {
-      resource_type: 'raw',
+      resource_type: 'auto',
       folder: options.folder || 'libaranhs/resumes',
       public_id: options.public_id,
+      type: 'upload',
+      flags: 'attachment',
       ...options
     });
     return result;
@@ -40,13 +44,46 @@ const uploadFile = async (filePath, options = {}) => {
 // Helper function to delete file
 const deleteFile = async (publicId) => {
   try {
-    const result = await cloudinary.uploader.destroy(publicId, {
-      resource_type: 'raw'
+    console.log('[CLOUDINARY] Attempting to delete:', publicId);
+
+    // Try deleting as image first (PDFs are stored as images when using auto)
+    let result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: 'image',
+      invalidate: true
     });
+
+    console.log('[CLOUDINARY] Delete result (image):', result);
+
+    // If not found as image, try as raw
+    if (result.result === 'not found') {
+      console.log('[CLOUDINARY] Not found as image, trying raw...');
+      result = await cloudinary.uploader.destroy(publicId, {
+        resource_type: 'raw',
+        invalidate: true
+      });
+      console.log('[CLOUDINARY] Delete result (raw):', result);
+    }
+
     return result;
   } catch (error) {
-    console.error('Cloudinary delete error:', error);
+    console.error('[CLOUDINARY] Delete error:', error);
     throw error;
+  }
+};
+
+// Helper function to get signed URL for raw files
+const getSignedUrl = (publicId, resourceType = 'raw') => {
+  try {
+    // Generate a signed URL that bypasses access restrictions
+    return cloudinary.url(publicId, {
+      resource_type: resourceType,
+      secure: true,
+      sign_url: true,
+      type: 'upload'
+    });
+  } catch (error) {
+    console.error('[CLOUDINARY] Error generating signed URL:', error);
+    return null;
   }
 };
 
@@ -64,5 +101,6 @@ module.exports = {
   testConnection,
   uploadFile,
   deleteFile,
-  getSecureUrl
+  getSecureUrl,
+  getSignedUrl
 };

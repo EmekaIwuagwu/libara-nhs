@@ -1,4 +1,6 @@
 const { query } = require('../config/database');
+const fs = require('fs').promises;
+const path = require('path');
 
 class Resume {
   static async create(resumeData) {
@@ -14,6 +16,7 @@ class Resume {
       cloudinary_url,
       cloudinary_public_id,
       cloudinary_secure_url
+      mime_type
     } = resumeData;
 
     // Check if this is the user's first resume, make it default
@@ -27,13 +30,16 @@ class Resume {
         cloudinary_url, cloudinary_public_id, cloudinary_secure_url, is_default
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        user_id, filename, original_name, file_path, file_size, mime_type, is_default
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await query(sql, [
       user_id,
       filename,
       original_name,
-      file_path || null,
+      file_path,
       file_size,
       mime_type,
       base64_data || null,
@@ -44,6 +50,7 @@ class Resume {
       isDefault
     ]);
 
+    console.log('[RESUME MODEL] Created resume with ID:', result.insertId);
     return result.insertId;
   }
 
@@ -84,27 +91,57 @@ class Resume {
   }
 
   static async delete(id, userId) {
+    console.log('[RESUME MODEL] Delete called - ID:', id, 'User:', userId);
+
     // Get the resume
     const resume = await this.findById(id);
-    if (!resume || resume.user_id !== userId) {
+
+    if (!resume) {
+      console.log('[RESUME MODEL] Resume not found');
       return false;
     }
 
     // Delete from database (base64 data is stored in DB, so this removes everything)
+    if (resume.user_id !== userId) {
+      console.log('[RESUME MODEL] User ID mismatch. Resume belongs to:', resume.user_id, 'Requested by:', userId);
+      return false;
+    }
+
+    console.log('[RESUME MODEL] Resume found, deleting file:', resume.file_path);
+
+    // Delete the local file if it exists
+    if (resume.file_path) {
+      try {
+        await fs.unlink(resume.file_path);
+        console.log('[RESUME MODEL] File deleted successfully');
+      } catch (error) {
+        console.error('[RESUME MODEL] Error deleting file:', error.message);
+        // Continue even if file delete fails (file might already be gone)
+      }
+    }
+
+    // Delete from database
+    console.log('[RESUME MODEL] Deleting from database...');
     const sql = 'DELETE FROM resumes WHERE id = ? AND user_id = ?';
-    await query(sql, [id, userId]);
+    const result = await query(sql, [id, userId]);
+
+    console.log('[RESUME MODEL] Database delete result, affected rows:', result.affectedRows);
 
     console.log('[RESUME] Deleted resume from database:', id);
 
     // If this was the default, set another one as default
     if (resume.is_default) {
+      console.log('[RESUME MODEL] Was default resume, reassigning...');
       const remainingResumes = await this.findByUserId(userId);
       if (remainingResumes.length > 0) {
         await this.setDefault(remainingResumes[0].id, userId);
+        console.log('[RESUME MODEL] Set new default resume:', remainingResumes[0].id);
       }
     }
 
-    return true;
+    const success = result.affectedRows > 0;
+    console.log('[RESUME MODEL] Delete completed, success:', success);
+    return success;
   }
 
   static async count(userId) {
