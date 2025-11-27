@@ -112,10 +112,10 @@ class Application {
       LEFT JOIN application_configs ac ON a.config_id = ac.id
       WHERE a.user_id = ?
       ORDER BY a.created_at DESC
-      LIMIT ?
+      LIMIT ${parseInt(limit)}
     `;
 
-    const results = await query(sql, [userId, limit]);
+    const results = await query(sql, [userId]);
     return results;
   }
 
