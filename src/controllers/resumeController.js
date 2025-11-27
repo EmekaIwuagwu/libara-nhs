@@ -110,13 +110,22 @@ exports.view = async (req, res) => {
       return res.status(404).send('Resume not found');
     }
 
-    // Set appropriate headers for PDF viewing
-    res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename="' + resume.original_name + '"');
+    // If stored on Cloudinary, redirect to secure URL for inline viewing
+    if (resume.cloudinary_secure_url) {
+      // For PDF viewing in browser, we can use Cloudinary's fl_attachment:false
+      const previewUrl = resume.cloudinary_secure_url.replace('/upload/', '/upload/fl_attachment:false/');
+      return res.redirect(previewUrl);
+    }
 
-    // Read and send the file
-    const fileBuffer = await fs.readFile(resume.file_path);
-    res.send(fileBuffer);
+    // Fallback to local file (for old resumes)
+    if (resume.file_path) {
+      res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="' + resume.original_name + '"');
+      const fileBuffer = await fs.readFile(resume.file_path);
+      return res.send(fileBuffer);
+    }
+
+    return res.status(404).send('Resume file not found');
   } catch (error) {
     console.error('Resume view error:', error);
     res.status(500).send('An error occurred while viewing the resume');
@@ -148,36 +157,6 @@ exports.download = async (req, res) => {
   } catch (error) {
     console.error('[RESUME] Download error:', error);
     res.status(500).send('An error occurred while downloading the resume');
-  }
-};
-
-exports.preview = async (req, res) => {
-  try {
-    const resumeId = req.params.id;
-    const userId = req.session.userId;
-
-    const resume = await Resume.findById(resumeId);
-
-    if (!resume || resume.user_id !== userId) {
-      return res.status(404).send('Resume not found');
-    }
-
-    // If stored on Cloudinary, redirect to secure URL for inline viewing
-    if (resume.cloudinary_secure_url) {
-      // For PDF viewing in browser, we can use Cloudinary's fl_attachment:false
-      const previewUrl = resume.cloudinary_secure_url.replace('/upload/', '/upload/fl_attachment:false/');
-      return res.redirect(previewUrl);
-    }
-
-    // Fallback to local file (for old resumes)
-    if (resume.file_path) {
-      return res.sendFile(path.resolve(resume.file_path));
-    }
-
-    return res.status(404).send('Resume file not found');
-  } catch (error) {
-    console.error('[RESUME] Preview error:', error);
-    res.status(500).send('An error occurred while previewing the resume');
   }
 };
 
@@ -217,36 +196,31 @@ exports.delete = async (req, res) => {
     const resumeId = req.params.id;
     const userId = req.session.userId;
 
+    console.log('Delete resume request - ID:', resumeId, 'User:', userId);
+
     const success = await Resume.delete(resumeId, userId);
 
+    console.log('Delete result:', success);
+
     if (!success) {
+      console.log('Resume not found or already deleted');
       return res.status(404).json({
         success: false,
         message: 'Resume not found'
       });
     }
 
-    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json({
-        success: true,
-        message: 'Resume deleted successfully'
-      });
-    }
-
-    req.session.successMessage = 'Resume deleted successfully';
-    res.redirect('/dashboard/resume');
+    console.log('Resume deleted successfully');
+    return res.json({
+      success: true,
+      message: 'Resume deleted successfully'
+    });
   } catch (error) {
     console.error('Delete resume error:', error);
-
-    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.status(500).json({
-        success: false,
-        message: 'An error occurred while deleting the resume'
-      });
-    }
-
-    req.session.errorMessage = 'An error occurred while deleting the resume';
-    res.redirect('/dashboard/resume');
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred while deleting the resume'
+    });
   }
 };
 

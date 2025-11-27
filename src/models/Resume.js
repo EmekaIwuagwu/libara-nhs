@@ -98,7 +98,7 @@ class Resume {
       }
     }
 
-    // Delete the local file if it exists
+    // Delete the local file if it exists (for old resumes)
     if (resume.file_path) {
       try {
         await fs.unlink(resume.file_path);
@@ -110,7 +110,7 @@ class Resume {
 
     // Delete from database
     const sql = 'DELETE FROM resumes WHERE id = ? AND user_id = ?';
-    await query(sql, [id, userId]);
+    const result = await query(sql, [id, userId]);
 
     // If this was the default, set another one as default
     if (resume.is_default) {
@@ -120,7 +120,7 @@ class Resume {
       }
     }
 
-    return true;
+    return result.affectedRows > 0;
   }
 
   static async count(userId) {
