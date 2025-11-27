@@ -112,7 +112,7 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/dashboard/resume', resumeRoutes);
 app.use('/dashboard/config', configRoutes);
 app.use('/dashboard/settings', settingsRoutes);
-app.use('/dashboard/automation', automationRoutes);
+app.use('/dashboard/applybox', automationRoutes);
 
 // 404 handler
 app.use((req, res) => {
