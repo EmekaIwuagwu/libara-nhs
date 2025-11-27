@@ -22,6 +22,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const resumeRoutes = require('./routes/resume');
 const configRoutes = require('./routes/config');
 const settingsRoutes = require('./routes/settings');
+const automationRoutes = require('./routes/automation');
 
 // Initialize Express app
 const app = express();
@@ -111,6 +112,7 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/dashboard/resume', resumeRoutes);
 app.use('/dashboard/config', configRoutes);
 app.use('/dashboard/settings', settingsRoutes);
+app.use('/dashboard/automation', automationRoutes);
 
 // 404 handler
 app.use((req, res) => {

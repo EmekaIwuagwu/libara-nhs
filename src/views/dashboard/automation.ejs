@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - LibaraNHS</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="bg-slate-50">
+    <%- include('../partials/sidebar') %>
+
+    <div class="ml-64 p-8">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold text-slate-800 mb-8">🤖 Job Application Automation</h1>
+
+            <% if (successMessage) { %>
+                <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
+                    <%= successMessage %>
+                </div>
+            <% } %>
+
+            <% if (errorMessage) { %>
+                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+                    <%= errorMessage %>
+                </div>
+            <% } %>
+
+            <!-- Automation Control Panel -->
+            <div class="card mb-8">
+                <h2 class="text-2xl font-semibold text-slate-800 mb-4">Start New Automation</h2>
+
+                <form id="automationForm" class="space-y-6">
+                    <!-- Select Configuration -->
+                    <div>
+                        <label class="form-label" for="configId">Select Job Configuration</label>
+                        <select id="configId" name="configId" class="form-input" required>
+                            <option value="">-- Choose a configuration --</option>
+                            <% if (configs && configs.length > 0) { %>
+                                <% configs.forEach(config => { %>
+                                    <option value="<%= config.id %>">
+                                        <%= config.config_name %> - <%= config.job_title %> (<%= config.job_location %>)
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+                        <% if (!configs || configs.length === 0) { %>
+                            <p class="text-sm text-red-600 mt-2">No active configurations found. <a href="/dashboard/config/create" class="text-primary underline">Create one first</a>.</p>
+                        <% } %>
+                    </div>
+
+                    <!-- Select Resume -->
+                    <div>
+                        <label class="form-label" for="resumeId">Select Resume</label>
+                        <select id="resumeId" name="resumeId" class="form-input" required>
+                            <option value="">-- Choose a resume --</option>
+                            <% if (resumes && resumes.length > 0) { %>
+                                <% resumes.forEach(resume => { %>
+                                    <option value="<%= resume.id %>" <%= resume.is_default ? 'selected' : '' %>>
+                                        <%= resume.original_name %>
+                                        <%= resume.is_default ? '(Default)' : '' %>
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+                        <% if (!resumes || resumes.length === 0) { %>
+                            <p class="text-sm text-red-600 mt-2">No resumes found. <a href="/dashboard/resume" class="text-primary underline">Upload one first</a>.</p>
+                        <% } %>
+                    </div>
+
+                    <!-- Select Portal -->
+                    <div>
+                        <label class="form-label" for="portal">NHS Portal</label>
+                        <select id="portal" name="portal" class="form-input" required>
+                            <option value="england">NHS England (NHS Jobs)</option>
+                            <option value="scotland">NHS Scotland (eESS)</option>
+                        </select>
+                        <p class="text-sm text-slate-600 mt-2">Select which NHS portal to apply through</p>
+                    </div>
+
+                    <!-- Start Button -->
+                    <div class="flex items-center gap-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="startBtn">
+                            🚀 Start Automation
+                        </button>
+                        <div id="status" class="text-sm text-slate-600"></div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                        <p class="text-sm text-blue-800">
+                            <strong>ℹ️ How it works:</strong> The automation will login to NHS Jobs, search for positions matching your configuration, and automatically apply to suitable jobs using your selected resume.
+                        </p>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Applications List -->
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-slate-800">Recent Applications</h2>
+                    <button data-action="refresh" class="text-sm text-primary hover:text-primary-dark">
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                <div id="applicationsList">
+                    <% if (applications && applications.length > 0) { %>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Job Title</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Employer</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Portal</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-slate-200">
+                                    <% applications.forEach(app => { %>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                                <%= app.job_title %>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                                <%= app.employer || 'N/A' %>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                                <span class="capitalize"><%= app.portal %></span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <% if (app.status === 'submitted') { %>
+                                                    <span class="badge badge-success">✓ Submitted</span>
+                                                <% } else if (app.status === 'pending') { %>
+                                                    <span class="badge badge-warning">⏳ Pending</span>
+                                                <% } else if (app.status === 'failed') { %>
+                                                    <span class="badge badge-error">✗ Failed</span>
+                                                <% } else { %>
+                                                    <span class="badge"><%= app.status %></span>
+                                                <% } %>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                                <%= new Date(app.created_at).toLocaleDateString() %>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="text-center py-12">
+                            <div class="text-6xl mb-4">📝</div>
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2">No Applications Yet</h3>
+                            <p class="text-slate-600">Start automation above to begin applying to jobs automatically</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        // Handle form submission
+        document.getElementById('automationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const configId = document.getElementById('configId').value;
+            const resumeId = document.getElementById('resumeId').value;
+            const portal = document.getElementById('portal').value;
+            const startBtn = document.getElementById('startBtn');
+            const statusDiv = document.getElementById('status');
+
+            if (!configId || !resumeId) {
+                alert('Please select both a configuration and a resume');
+                return;
+            }
+
+            // Disable button
+            startBtn.disabled = true;
+            startBtn.textContent = '⏳ Starting automation...';
+            statusDiv.textContent = 'Launching browser...';
+
+            try {
+                const response = await fetch('/dashboard/automation/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ configId, resumeId, portal })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusDiv.textContent = '✓ Automation started successfully!';
+                    statusDiv.className = 'text-sm text-green-600 font-semibold';
+
+                    alert(result.message + '\\n\\n' + (result.info || ''));
+
+                    // Reload page after 2 seconds
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    statusDiv.textContent = '✗ ' + result.message;
+                    statusDiv.className = 'text-sm text-red-600';
+                    startBtn.disabled = false;
+                    startBtn.textContent = '🚀 Start Automation';
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.textContent = '✗ Network error';
+                statusDiv.className = 'text-sm text-red-600';
+                startBtn.disabled = false;
+                startBtn.textContent = '🚀 Start Automation';
+                alert('An error occurred: ' + error.message);
+            }
+        });
+
+        // Handle refresh
+        document.addEventListener('click', async function(e) {
+            const button = e.target.closest('[data-action="refresh"]');
+            if (!button) return;
+
+            button.textContent = '⏳ Refreshing...';
+
+            try {
+                const response = await fetch('/dashboard/automation/status');
+                const result = await response.json();
+
+                if (result.success) {
+                    // Reload page to show updated applications
+                    window.location.reload();
+                } else {
+                    button.textContent = '🔄 Refresh';
+                    alert('Failed to refresh');
+                }
+            } catch (error) {
+                button.textContent = '🔄 Refresh';
+                alert('An error occurred');
+            }
+        });
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            // Silently fetch new applications
+            fetch('/dashboard/automation/status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.applications) {
+                        // Check if we have new applications
+                        console.log('Auto-refresh: Found', data.applications.length, 'applications');
+                    }
+                })
+                .catch(err => console.error('Auto-refresh error:', err));
+        }, 30000); // 30 seconds
+    </script>
+</body>
+</html>
