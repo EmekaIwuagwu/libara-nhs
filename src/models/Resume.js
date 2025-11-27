@@ -1,6 +1,4 @@
 const { query } = require('../config/database');
-const fs = require('fs').promises;
-const path = require('path');
 
 class Resume {
   static async create(resumeData) {
@@ -12,11 +10,7 @@ class Resume {
       file_size,
       mime_type,
       base64_data,
-      compression_type,
-      cloudinary_url,
-      cloudinary_public_id,
-      cloudinary_secure_url
-      mime_type
+      compression_type
     } = resumeData;
 
     // Check if this is the user's first resume, make it default
@@ -26,27 +20,20 @@ class Resume {
     const sql = `
       INSERT INTO resumes (
         user_id, filename, original_name, file_path, file_size, mime_type,
-        base64_data, compression_type,
-        cloudinary_url, cloudinary_public_id, cloudinary_secure_url, is_default
+        base64_data, compression_type, is_default
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        user_id, filename, original_name, file_path, file_size, mime_type, is_default
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await query(sql, [
       user_id,
       filename,
       original_name,
-      file_path,
+      file_path || null,
       file_size,
       mime_type,
       base64_data || null,
       compression_type || 'gzip',
-      cloudinary_url || null,
-      cloudinary_public_id || null,
-      cloudinary_secure_url || null,
       isDefault
     ]);
 
@@ -81,19 +68,23 @@ class Resume {
   }
 
   static async setDefault(id, userId) {
+    console.log('[RESUME MODEL] Setting default resume:', id, 'for user:', userId);
+
     // First, unset all defaults for this user
     await query('UPDATE resumes SET is_default = FALSE WHERE user_id = ?', [userId]);
 
     // Then set the new default
     const sql = 'UPDATE resumes SET is_default = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?';
     await query(sql, [id, userId]);
+
+    console.log('[RESUME MODEL] Default resume updated successfully');
     return true;
   }
 
   static async delete(id, userId) {
     console.log('[RESUME MODEL] Delete called - ID:', id, 'User:', userId);
 
-    // Get the resume
+    // Get the resume first
     const resume = await this.findById(id);
 
     if (!resume) {
@@ -101,33 +92,18 @@ class Resume {
       return false;
     }
 
-    // Delete from database (base64 data is stored in DB, so this removes everything)
     if (resume.user_id !== userId) {
       console.log('[RESUME MODEL] User ID mismatch. Resume belongs to:', resume.user_id, 'Requested by:', userId);
       return false;
     }
 
-    console.log('[RESUME MODEL] Resume found, deleting file:', resume.file_path);
+    console.log('[RESUME MODEL] Resume found, proceeding with delete');
 
-    // Delete the local file if it exists
-    if (resume.file_path) {
-      try {
-        await fs.unlink(resume.file_path);
-        console.log('[RESUME MODEL] File deleted successfully');
-      } catch (error) {
-        console.error('[RESUME MODEL] Error deleting file:', error.message);
-        // Continue even if file delete fails (file might already be gone)
-      }
-    }
-
-    // Delete from database
-    console.log('[RESUME MODEL] Deleting from database...');
+    // Delete from database (base64 data is stored in DB, so this removes everything)
     const sql = 'DELETE FROM resumes WHERE id = ? AND user_id = ?';
     const result = await query(sql, [id, userId]);
 
     console.log('[RESUME MODEL] Database delete result, affected rows:', result.affectedRows);
-
-    console.log('[RESUME] Deleted resume from database:', id);
 
     // If this was the default, set another one as default
     if (resume.is_default) {

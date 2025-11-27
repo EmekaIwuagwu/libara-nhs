@@ -107,9 +107,27 @@ class ApplicationConfig {
   }
 
   static async delete(id, userId) {
+    console.log('[CONFIG MODEL] Delete called - ID:', id, 'User:', userId);
+
+    // First check if config exists and belongs to user
+    const config = await this.findById(id);
+    if (!config) {
+      console.log('[CONFIG MODEL] Config not found');
+      return false;
+    }
+
+    if (config.user_id !== userId) {
+      console.log('[CONFIG MODEL] User ID mismatch. Config belongs to:', config.user_id, 'Requested by:', userId);
+      return false;
+    }
+
+    // Delete from database
     const sql = 'DELETE FROM application_configs WHERE id = ? AND user_id = ?';
-    await query(sql, [id, userId]);
-    return true;
+    const result = await query(sql, [id, userId]);
+
+    const success = result.affectedRows > 0;
+    console.log('[CONFIG MODEL] Delete completed, affected rows:', result.affectedRows, 'success:', success);
+    return success;
   }
 
   static async duplicate(id, userId) {
