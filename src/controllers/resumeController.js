@@ -99,7 +99,7 @@ exports.upload = async (req, res) => {
   }
 };
 
-exports.view = async (req, res) => {
+exports.preview = async (req, res) => {
   try {
     const resumeId = req.params.id;
     const userId = req.session.userId;
@@ -127,10 +127,13 @@ exports.view = async (req, res) => {
 
     return res.status(404).send('Resume file not found');
   } catch (error) {
-    console.error('Resume view error:', error);
-    res.status(500).send('An error occurred while viewing the resume');
+    console.error('[RESUME] Preview error:', error);
+    res.status(500).send('An error occurred while previewing the resume');
   }
 };
+
+// Alias for backward compatibility
+exports.view = exports.preview;
 
 exports.download = async (req, res) => {
   try {
