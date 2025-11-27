@@ -181,7 +181,7 @@
             statusDiv.textContent = 'Launching browser...';
 
             try {
-                const response = await fetch('/dashboard/automation/start', {
+                const response = await fetch('/dashboard/applybox/start', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -226,7 +226,7 @@
             button.textContent = '⏳ Refreshing...';
 
             try {
-                const response = await fetch('/dashboard/automation/status');
+                const response = await fetch('/dashboard/applybox/status');
                 const result = await response.json();
 
                 if (result.success) {
@@ -245,7 +245,7 @@
         // Auto-refresh every 30 seconds
         setInterval(() => {
             // Silently fetch new applications
-            fetch('/dashboard/automation/status')
+            fetch('/dashboard/applybox/status')
                 .then(r => r.json())
                 .then(data => {
                     if (data.success && data.applications) {
