@@ -1,5 +1,4 @@
 const Resume = require('../models/Resume');
-const { uploadFile, getSignedUrl } = require('../config/cloudinary');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -37,58 +36,41 @@ exports.upload = async (req, res) => {
     const userId = req.session.userId;
     const file = req.file;
 
-    console.log('[RESUME] Uploading to Cloudinary:', file.originalname);
+    console.log('[RESUME UPLOAD] File uploaded:', file.originalname);
+    console.log('[RESUME UPLOAD] Stored at:', file.path);
+    console.log('[RESUME UPLOAD] Size:', file.size, 'bytes');
 
-    // Upload to Cloudinary
-    const cloudinaryResult = await uploadFile(file.path, {
-      folder: 'libaranhs/resumes',
-      public_id: `user-${userId}-${Date.now()}`
-    });
-
-    console.log('[RESUME] Cloudinary upload successful:', cloudinaryResult.public_id);
-
-    // Delete local temp file
-    try {
-      await fs.unlink(file.path);
-      console.log('[RESUME] Local temp file deleted');
-    } catch (error) {
-      console.error('[RESUME] Error deleting temp file:', error);
-    }
-
-    // Create resume record in database
+    // Create resume record in database (file already saved by multer)
     const resumeId = await Resume.create({
       user_id: userId,
-      filename: cloudinaryResult.public_id,
+      filename: file.filename,
       original_name: file.originalname,
-      file_path: null, // No longer storing locally
-      file_size: cloudinaryResult.bytes,
-      mime_type: file.mimetype,
-      cloudinary_url: cloudinaryResult.url,
-      cloudinary_public_id: cloudinaryResult.public_id,
-      cloudinary_secure_url: cloudinaryResult.secure_url
+      file_path: file.path,
+      file_size: file.size,
+      mime_type: file.mimetype
     });
 
-    console.log('[RESUME] Resume record created:', resumeId);
+    console.log('[RESUME UPLOAD] Resume record created with ID:', resumeId);
 
     res.json({
       success: true,
-      message: 'Resume uploaded successfully to cloud storage',
+      message: 'Resume uploaded successfully',
       resume: {
         id: resumeId,
         filename: file.originalname,
-        size: cloudinaryResult.bytes,
-        url: cloudinaryResult.secure_url
+        size: file.size
       }
     });
   } catch (error) {
-    console.error('[RESUME] Upload error:', error);
+    console.error('[RESUME UPLOAD] Error:', error);
 
-    // Clean up temp file if it exists
+    // Clean up uploaded file if database insert failed
     if (req.file && req.file.path) {
       try {
         await fs.unlink(req.file.path);
+        console.log('[RESUME UPLOAD] Cleaned up file after error');
       } catch (cleanupError) {
-        console.error('[RESUME] Cleanup error:', cleanupError);
+        console.error('[RESUME UPLOAD] Cleanup error:', cleanupError);
       }
     }
 
@@ -107,47 +89,35 @@ exports.preview = async (req, res) => {
     const resume = await Resume.findById(resumeId);
 
     if (!resume || resume.user_id !== userId) {
+      console.log('[RESUME PREVIEW] Resume not found or unauthorized');
       return res.status(404).send('Resume not found');
     }
 
-    console.log('[RESUME PREVIEW] ========================================');
-    console.log('[RESUME PREVIEW] Resume ID:', resumeId);
-    console.log('[RESUME PREVIEW] User ID:', userId);
-    console.log('[RESUME PREVIEW] Cloudinary public_id:', resume.cloudinary_public_id);
-    console.log('[RESUME PREVIEW] Cloudinary URL:', resume.cloudinary_secure_url);
-
-    // If stored on Cloudinary
-    if (resume.cloudinary_public_id) {
-      console.log('[RESUME PREVIEW] Generating signed URL for:', resume.cloudinary_public_id);
-
-      // Generate a signed URL that will work for raw resources
-      const signedUrl = getSignedUrl(resume.cloudinary_public_id, 'raw');
-
-      if (signedUrl) {
-        console.log('[RESUME PREVIEW] Redirecting to signed URL');
-        console.log('[RESUME PREVIEW] ========================================');
-        return res.redirect(signedUrl);
-      } else {
-        console.error('[RESUME PREVIEW] Failed to generate signed URL');
-        return res.status(500).send('Error generating preview URL');
-      }
+    if (!resume.file_path) {
+      console.log('[RESUME PREVIEW] No file path for resume:', resumeId);
+      return res.status(404).send('Resume file not found');
     }
 
-    // Fallback to local file
-    if (resume.file_path) {
-      console.log('[RESUME PREVIEW] Serving local file:', resume.file_path);
-      res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
-      const fileBuffer = await fs.readFile(resume.file_path);
-      return res.send(fileBuffer);
+    console.log('[RESUME PREVIEW] Serving file:', resume.file_path);
+
+    // Check if file exists
+    try {
+      await fs.access(resume.file_path);
+    } catch (error) {
+      console.error('[RESUME PREVIEW] File not found on disk:', resume.file_path);
+      return res.status(404).send('Resume file not found on server');
     }
 
-    console.log('[RESUME PREVIEW] No file found');
-    console.log('[RESUME PREVIEW] ========================================');
-    return res.status(404).send('Resume file not found');
+    // Set headers for inline PDF viewing
+    res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${resume.original_name}"`);
+
+    // Read and send file
+    const fileBuffer = await fs.readFile(resume.file_path);
+    console.log('[RESUME PREVIEW] File sent, size:', fileBuffer.length, 'bytes');
+    return res.send(fileBuffer);
   } catch (error) {
-    console.error('[RESUME PREVIEW] ERROR:', error);
-    console.error('[RESUME PREVIEW] ========================================');
+    console.error('[RESUME PREVIEW] Error:', error);
     res.status(500).send('An error occurred while previewing the resume');
   }
 };
@@ -163,22 +133,35 @@ exports.download = async (req, res) => {
     const resume = await Resume.findById(resumeId);
 
     if (!resume || resume.user_id !== userId) {
+      console.log('[RESUME DOWNLOAD] Resume not found or unauthorized');
       return res.status(404).send('Resume not found');
     }
 
-    // If stored on Cloudinary, redirect to secure URL
-    if (resume.cloudinary_secure_url) {
-      return res.redirect(resume.cloudinary_secure_url);
+    if (!resume.file_path) {
+      console.log('[RESUME DOWNLOAD] No file path for resume:', resumeId);
+      return res.status(404).send('Resume file not found');
     }
 
-    // Fallback to local file (for old resumes)
-    if (resume.file_path) {
-      return res.download(resume.file_path, resume.original_name);
+    console.log('[RESUME DOWNLOAD] Downloading file:', resume.file_path);
+
+    // Check if file exists
+    try {
+      await fs.access(resume.file_path);
+    } catch (error) {
+      console.error('[RESUME DOWNLOAD] File not found on disk:', resume.file_path);
+      return res.status(404).send('Resume file not found on server');
     }
 
-    return res.status(404).send('Resume file not found');
+    // Send file for download
+    res.download(resume.file_path, resume.original_name, (err) => {
+      if (err) {
+        console.error('[RESUME DOWNLOAD] Error sending file:', err);
+      } else {
+        console.log('[RESUME DOWNLOAD] File sent successfully');
+      }
+    });
   } catch (error) {
-    console.error('[RESUME] Download error:', error);
+    console.error('[RESUME DOWNLOAD] Error:', error);
     res.status(500).send('An error occurred while downloading the resume');
   }
 };
