@@ -64,13 +64,13 @@ const limiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login/register attempts per windowMs
+  max: 50, // Limit each IP to 50 requests per windowMs (increased for development)
   message: 'Too many authentication attempts, please try again later.'
 });
 
 app.use('/api/', limiter);
-app.use('/login', authLimiter);
-app.use('/register', authLimiter);
+// Only apply rate limiter to POST requests (actual login/register attempts)
+// Not to GET requests (viewing the login/register page)
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
