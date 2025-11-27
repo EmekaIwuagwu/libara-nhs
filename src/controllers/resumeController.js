@@ -138,11 +138,11 @@ exports.preview = async (req, res) => {
       return res.status(404).send('Resume not found');
     }
 
-    // If stored on Cloudinary, redirect to secure URL for inline viewing
+    // If stored on Cloudinary, use direct secure URL
+    // Modern browsers will display PDF inline automatically
     if (resume.cloudinary_secure_url) {
-      // For PDF viewing in browser, we can use Cloudinary's fl_attachment:false
-      const previewUrl = resume.cloudinary_secure_url.replace('/upload/', '/upload/fl_attachment:false/');
-      return res.redirect(previewUrl);
+      console.log('[RESUME] Preview URL:', resume.cloudinary_secure_url);
+      return res.redirect(resume.cloudinary_secure_url);
     }
 
     // Fallback to local file (for old resumes)
