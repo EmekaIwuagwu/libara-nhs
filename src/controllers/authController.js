@@ -28,19 +28,20 @@ exports.login = async (req, res) => {
   const { username, password, remember } = req.body;
 
   try {
-    console.log('[LOGIN] Attempting login for:', username);
+    console.log('✓ Login attempt for:', username);
 
     // Find user by username or email
     const user = await User.findByUsernameOrEmail(username);
 
     if (!user) {
-      console.log('[LOGIN] User not found:', username);
+      console.log('✗ User not found:', username);
       req.session.errorMessage = 'Invalid username or password';
       req.session.oldInput = { username };
       return res.redirect('/login');
     }
 
-    console.log('[LOGIN] User found, verifying password...');
+    console.log('✓ User found. ID:', user.id);
+
     // Verify password
     const isValidPassword = await User.verifyPassword(password, user.password);
 
@@ -85,7 +86,7 @@ exports.login = async (req, res) => {
       });
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('✗ Login error:', error);
     req.session.errorMessage = 'An error occurred during login. Please try again.';
     res.redirect('/login');
   }
@@ -179,8 +180,8 @@ exports.register = async (req, res) => {
       });
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    req.session.errorMessage = 'An error occurred during registration. Please try again.';
+    console.error('✗ Registration error:', error);
+    req.session.errorMessage = `Registration failed: ${error.message}`;
     req.session.oldInput = req.body;
     res.redirect('/register');
   }
