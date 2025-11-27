@@ -198,31 +198,53 @@
             });
         }
 
-        function deleteResume(id) {
-            if (confirm('Are you sure you want to delete this resume?')) {
-                console.log('Deleting resume:', id);
-                fetch(`/dashboard/resume/${id}`, {
+        async function deleteResume(id) {
+            if (!confirm('Are you sure you want to delete this resume? This action cannot be undone.')) {
+                return;
+            }
+
+            console.log('[CLIENT] Starting delete for resume ID:', id);
+
+            try {
+                console.log('[CLIENT] Sending DELETE request to:', `/dashboard/resume/${id}`);
+                const response = await fetch(`/dashboard/resume/${id}`, {
                     method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => {
-                    console.log('Delete response status:', response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Delete response:', data);
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        alert(data.message || 'Failed to delete resume');
-                    }
-                })
-                .catch(error => {
-                    console.error('Delete error:', error);
-                    alert('An error occurred while deleting the resume');
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
                 });
+
+                console.log('[CLIENT] Response status:', response.status);
+                console.log('[CLIENT] Response ok:', response.ok);
+                console.log('[CLIENT] Response headers:', [...response.headers.entries()]);
+
+                let data;
+                const contentType = response.headers.get('content-type');
+                console.log('[CLIENT] Content-Type:', contentType);
+
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                    console.log('[CLIENT] Response data:', data);
+                } else {
+                    const text = await response.text();
+                    console.error('[CLIENT] Non-JSON response:', text);
+                    alert('Server returned an invalid response. Check console for details.');
+                    return;
+                }
+
+                if (response.ok && data.success) {
+                    console.log('[CLIENT] Delete successful, reloading page...');
+                    alert('Resume deleted successfully!');
+                    window.location.reload();
+                } else {
+                    console.error('[CLIENT] Delete failed:', data.message);
+                    alert('Failed to delete resume: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('[CLIENT] Exception during delete:', error);
+                alert('An error occurred while deleting the resume: ' + error.message);
             }
         }
     </script>

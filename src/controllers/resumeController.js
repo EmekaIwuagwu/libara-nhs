@@ -110,21 +110,26 @@ exports.preview = async (req, res) => {
       return res.status(404).send('Resume not found');
     }
 
-    // If stored on Cloudinary, redirect to secure URL for inline viewing
+    console.log('[RESUME] Preview request for resume ID:', resumeId);
+    console.log('[RESUME] Cloudinary URL:', resume.cloudinary_secure_url);
+
+    // If stored on Cloudinary, redirect directly to the secure URL
+    // Cloudinary will serve it inline by default for PDFs
     if (resume.cloudinary_secure_url) {
-      // For PDF viewing in browser, we can use Cloudinary's fl_attachment:false
-      const previewUrl = resume.cloudinary_secure_url.replace('/upload/', '/upload/fl_attachment:false/');
-      return res.redirect(previewUrl);
+      console.log('[RESUME] Redirecting to Cloudinary URL');
+      return res.redirect(resume.cloudinary_secure_url);
     }
 
     // Fallback to local file (for old resumes)
     if (resume.file_path) {
+      console.log('[RESUME] Serving local file:', resume.file_path);
       res.setHeader('Content-Type', resume.mime_type || 'application/pdf');
       res.setHeader('Content-Disposition', 'inline; filename="' + resume.original_name + '"');
       const fileBuffer = await fs.readFile(resume.file_path);
       return res.send(fileBuffer);
     }
 
+    console.log('[RESUME] No file found for resume');
     return res.status(404).send('Resume file not found');
   } catch (error) {
     console.error('[RESUME] Preview error:', error);
@@ -196,33 +201,62 @@ exports.setDefault = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    const resumeId = req.params.id;
+    const resumeId = parseInt(req.params.id);
     const userId = req.session.userId;
 
-    console.log('Delete resume request - ID:', resumeId, 'User:', userId);
+    console.log('[RESUME DELETE] ========================================');
+    console.log('[RESUME DELETE] Request received');
+    console.log('[RESUME DELETE] Resume ID:', resumeId, '(type:', typeof resumeId, ')');
+    console.log('[RESUME DELETE] User ID:', userId, '(type:', typeof userId, ')');
+    console.log('[RESUME DELETE] ========================================');
 
-    const success = await Resume.delete(resumeId, userId);
-
-    console.log('Delete result:', success);
-
-    if (!success) {
-      console.log('Resume not found or already deleted');
-      return res.status(404).json({
+    if (!resumeId || isNaN(resumeId)) {
+      console.log('[RESUME DELETE] Invalid resume ID');
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(400).json({
         success: false,
-        message: 'Resume not found'
+        message: 'Invalid resume ID'
       });
     }
 
-    console.log('Resume deleted successfully');
-    return res.json({
+    if (!userId) {
+      console.log('[RESUME DELETE] No user ID in session - not authenticated');
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+
+    console.log('[RESUME DELETE] Calling Resume.delete() method...');
+    const success = await Resume.delete(resumeId, userId);
+    console.log('[RESUME DELETE] Resume.delete() returned:', success);
+
+    if (!success) {
+      console.log('[RESUME DELETE] FAILED - resume not found or unauthorized');
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(404).json({
+        success: false,
+        message: 'Resume not found or you do not have permission to delete it'
+      });
+    }
+
+    console.log('[RESUME DELETE] SUCCESS - Resume ID', resumeId, 'deleted');
+    console.log('[RESUME DELETE] ========================================');
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).json({
       success: true,
       message: 'Resume deleted successfully'
     });
   } catch (error) {
-    console.error('Delete resume error:', error);
+    console.error('[RESUME DELETE] ========================================');
+    console.error('[RESUME DELETE] EXCEPTION:', error);
+    console.error('[RESUME DELETE] Stack:', error.stack);
+    console.error('[RESUME DELETE] ========================================');
+    res.setHeader('Content-Type', 'application/json');
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while deleting the resume'
+      message: 'An error occurred while deleting the resume: ' + error.message
     });
   }
 };
