@@ -48,7 +48,7 @@ exports.store = async (req, res) => {
     }
 
     req.session.successMessage = 'Configuration created successfully';
-    res.redirect('/dashboard/saved-config');
+    res.redirect('/dashboard/config/saved');
   } catch (error) {
     console.error('Config store error:', error);
 
@@ -95,7 +95,7 @@ exports.edit = async (req, res) => {
 
     if (!config || config.user_id !== userId) {
       req.session.errorMessage = 'Configuration not found';
-      return res.redirect('/dashboard/saved-config');
+      return res.redirect('/dashboard/config/saved');
     }
 
     const resumes = await Resume.findByUserId(userId);
@@ -142,7 +142,7 @@ exports.update = async (req, res) => {
     }
 
     req.session.successMessage = 'Configuration updated successfully';
-    res.redirect('/dashboard/saved-config');
+    res.redirect('/dashboard/config/saved');
   } catch (error) {
     console.error('Config update error:', error);
 
@@ -154,7 +154,7 @@ exports.update = async (req, res) => {
     }
 
     req.session.errorMessage = 'An error occurred while updating the configuration';
-    res.redirect('/dashboard/saved-config');
+    res.redirect('/dashboard/config/saved');
   }
 };
 
@@ -221,7 +221,7 @@ exports.delete = async (req, res) => {
     }
 
     req.session.successMessage = 'Configuration deleted successfully';
-    res.redirect('/dashboard/saved-config');
+    res.redirect('/dashboard/config/saved');
   } catch (error) {
     console.error('Config delete error:', error);
 
@@ -233,7 +233,7 @@ exports.delete = async (req, res) => {
     }
 
     req.session.errorMessage = 'An error occurred while deleting the configuration';
-    res.redirect('/dashboard/saved-config');
+    res.redirect('/dashboard/config/saved');
   }
 };
 
