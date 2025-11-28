@@ -24,13 +24,15 @@ async function completeFitnessToPractice(page) {
 
         await delay(TIMEOUTS.SHORT);
 
-        // Click continue first (intro page)
-        await clickIfExists(page, FITNESS_TO_PRACTICE.CONTINUE, {
-            description: 'Continue button',
+        // Click the continue LINK to start the section
+        const continueClicked = await clickIfExists(page, FITNESS_TO_PRACTICE.CONTINUE_LINK, {
+            description: 'Continue link to start section',
             timeout: TIMEOUTS.SHORT
         });
 
-        await delay(TIMEOUTS.SHORT);
+        if (continueClicked) {
+            await delay(TIMEOUTS.SHORT);
+        }
 
         // There are 3 "No" questions to answer
         // Question 1

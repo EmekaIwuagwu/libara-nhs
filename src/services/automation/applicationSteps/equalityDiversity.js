@@ -24,122 +24,68 @@ async function completeEqualityDiversity(page) {
 
         await delay(TIMEOUTS.SHORT);
 
-        // Click Continue link at the start
-        await clickIfExists(page, EQUALITY_DIVERSITY.CONTINUE_LINK, {
-            description: 'Continue link',
+        // Click the continue LINK to start the section
+        const continueClicked = await clickIfExists(page, EQUALITY_DIVERSITY.CONTINUE_LINK, {
+            description: 'Continue link to start section',
             timeout: TIMEOUTS.SHORT
         });
 
-        await delay(TIMEOUTS.SHORT);
+        if (continueClicked) {
+            await delay(TIMEOUTS.SHORT);
+        }
 
-        // Gender
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.GENDER, {
-            description: 'Gender - Male'
+        // Answer all questions with "Prefer not to say" options
+        // Gender (Male option as default)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.GENDER_MALE, {
+            description: 'Gender: Male'
         });
+        await delay(500);
 
+        // Birth sex match (Yes option)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.BIRTH_SEX_MATCH_YES, {
+            description: 'Birth sex same as gender: Yes'
+        });
+        await delay(500);
+
+        // Marital status (Single)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.MARITAL_STATUS_SINGLE, {
+            description: 'Marital status: Single'
+        });
+        await delay(500);
+
+        // Pregnancy (No)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.PREGNANCY_NO, {
+            description: 'Pregnancy/Maternity: No'
+        });
+        await delay(500);
+
+        // Sexuality (Prefer not to say)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.SEXUALITY_PREFER_NOT, {
+            description: 'Sexuality: Prefer not to say'
+        });
+        await delay(500);
+
+        // Age range (Prefer not to say)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.AGE_RANGE_PREFER_NOT, {
+            description: 'Age range: Prefer not to say'
+        });
+        await delay(500);
+
+        // Ethnicity (Prefer not to say)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.ETHNICITY_PREFER_NOT, {
+            description: 'Ethnicity: Prefer not to say'
+        });
+        await delay(500);
+
+        // Religion (Prefer not to say)
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.RELIGION_PREFER_NOT, {
+            description: 'Religion: Prefer not to say'
+        });
         await delay(1000);
 
+        // Click save/continue
         await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
             description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Gender same as birth
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.BIRTH_SEX_MATCH, {
-            description: 'Gender same as birth - Yes'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Marital status
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.MARITAL_STATUS, {
-            description: 'Marital status - Single'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Pregnancy
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.PREGNANCY, {
-            description: 'Pregnancy - No'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Sexuality
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.SEXUALITY, {
-            description: 'Sexuality - Prefer not to say'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Age range
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.AGE_RANGE, {
-            description: 'Age range - Prefer not to say'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Ethnicity
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.ETHNICITY, {
-            description: 'Ethnicity - Prefer not to say'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Religion
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.RELIGION, {
-            description: 'Religion - Prefer not to say'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Final Continue button
-        await clickIfExists(page, EQUALITY_DIVERSITY.CONTINUE, {
-            description: 'Final Continue button',
-            timeout: TIMEOUTS.SHORT
         });
 
         await delay(TIMEOUTS.SHORT);

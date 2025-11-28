@@ -15,7 +15,7 @@ module.exports = {
         USERNAME_INPUT: '#username',
         PASSWORD_INPUT: '#password',
         SUBMIT_BUTTON: '#submit-button',
-        GO_TO_SEARCH: 'span.nhsuk-action-link__text' // Puppeteer compatible (no :has-text)
+        GO_TO_SEARCH: 'span.nhsuk-action-link__text' // "Go to search" text
     },
 
     // Search selectors
@@ -23,14 +23,14 @@ module.exports = {
         KEYWORD_INPUT: '#keyword',
         LOCATION_INPUT: '#location',
         SEARCH_BUTTON: '#search',
-        JOB_LINK_PATTERN: 'a[href^="/candidate/jobadvert/"]'
+        JOB_LINK_PATTERN: 'a[data-test="search-result-job-title"]' // Job result links
     },
 
     // Application detection
     APPLICATION: {
         START_APPLICATION_BUTTON: '#save_continue[value="Start Application"]',
-        CONTINUE_BUTTON: '#save_continue[value="Continue"]',
-        CONTINUE_BUTTON_ALT: '#continue'
+        CONTINUE_BUTTON: '#save_continue',
+        CONTINUE_LINK: '#continue' // Sometimes it's a link, not a button
     },
 
     // Contact Details step
@@ -50,7 +50,7 @@ module.exports = {
 
     // CV step
     CV: {
-        TASK_LINK: 'a[href*="/cv/input"]', // Keep href pattern as no ID provided
+        TASK_LINK: 'a[href*="/cv/input"]',
         CV_TEXTAREA: '#cv',
         SAVE_CONTINUE: '#save_continue',
         CONTINUE: '#continue'
@@ -59,7 +59,7 @@ module.exports = {
     // Safeguarding step
     SAFEGUARDING: {
         TASK_LINK: '#safeguarding_task_link',
-        CONTINUE_LINK: '#continue', // Link/button before questions
+        CONTINUE_LINK: '#continue', // This is a link to start the section
         NO_CONVICTIONS: '#convictions_id_option_2',
         SAVE_CONTINUE: '#save_continue',
         CONTINUE: '#continue'
@@ -68,8 +68,8 @@ module.exports = {
     // Fitness to Practice step
     FITNESS_TO_PRACTICE: {
         TASK_LINK: '#fitness_to_practice_task_link',
-        CONTINUE_LINK: '#continue', // Link/button before questions
-        NO_OPTION: '#answer_id_option_2',
+        CONTINUE_LINK: '#continue', // Link to start section
+        NO_OPTION: '#answer_id_option_2', // Used for multiple "No" selections
         SAVE_CONTINUE: '#save_continue',
         CONTINUE: '#continue'
     },
@@ -86,15 +86,15 @@ module.exports = {
     // Equality & Diversity step
     EQUALITY_DIVERSITY: {
         TASK_LINK: '#equality_and_diversity_task_link',
-        CONTINUE_LINK: '#continue', // Link/button before questions
-        GENDER: '#gender_choice_id_option_1',
-        BIRTH_SEX_MATCH: '#gender_same_at_birth_id_option_1',
-        MARITAL_STATUS: '#marital_status_id_option_2',
-        PREGNANCY: '#pregnant_or_maternity_id_option_2',
-        SEXUALITY: '#describe_sexuality_id_option_7',
-        AGE_RANGE: '#age_range_id_option_7',
-        ETHNICITY: '#ethnicity_id_option_18',
-        RELIGION: '#religion_id_option_11',
+        CONTINUE_LINK: '#continue', // Link to start section
+        GENDER_MALE: '#gender_choice_id_option_1',
+        BIRTH_SEX_MATCH_YES: '#gender_same_at_birth_id_option_1',
+        MARITAL_STATUS_SINGLE: '#marital_status_id_option_2',
+        PREGNANCY_NO: '#pregnant_or_maternity_id_option_2',
+        SEXUALITY_PREFER_NOT: '#describe_sexuality_id_option_7',
+        AGE_RANGE_PREFER_NOT: '#age_range_id_option_7',
+        ETHNICITY_PREFER_NOT: '#ethnicity_id_option_18',
+        RELIGION_PREFER_NOT: '#religion_id_option_11',
         SAVE_CONTINUE: '#save_continue',
         CONTINUE: '#continue'
     },
@@ -102,17 +102,16 @@ module.exports = {
     // Socio-Economic Background step
     SOCIO_ECONOMIC: {
         TASK_LINK: '#socio_economic_background_task_link',
-        CONTINUE_LINK: '#continue', // Link/button before questions
-        OCCUPATION: '#mainHouseholdOccupation_option_10',
-        SCHOOL_TYPE: '#attendedSchoolType_option_7',
-        FREE_SCHOOL_MEALS: '#eligibleForFreeSchoolMeals_option_6',
+        CONTINUE_LINK: '#continue', // Link to start section
+        OCCUPATION_PREFER_NOT: '#mainHouseholdOccupation_option_10',
+        SCHOOL_TYPE_PREFER_NOT: '#attendedSchoolType_option_7',
+        FREE_MEALS_PREFER_NOT: '#eligibleForFreeSchoolMeals_option_6',
         SAVE_CONTINUE: '#save_continue',
         CONTINUE: '#continue'
     },
 
     // Declaration step
     DECLARATION: {
-        TASK_LINK: 'a[href*="declaration"]', // Keep href pattern as no ID provided in docs
         AGREE_CHECKBOX: '#declaration_id',
         SEND_APPLICATION: '#send_application'
     },

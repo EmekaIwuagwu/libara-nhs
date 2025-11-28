@@ -24,65 +24,37 @@ async function completeSocioEconomic(page) {
 
         await delay(TIMEOUTS.SHORT);
 
-        // First Continue link
-        await clickIfExists(page, SOCIO_ECONOMIC.CONTINUE_LINK, {
-            description: 'First Continue link',
+        // Click the continue LINK to start the section
+        const continueClicked = await clickIfExists(page, SOCIO_ECONOMIC.CONTINUE_LINK, {
+            description: 'Continue link to start section',
             timeout: TIMEOUTS.SHORT
         });
 
-        await delay(TIMEOUTS.SHORT);
+        if (continueClicked) {
+            await delay(TIMEOUTS.SHORT);
+        }
 
-        // Second Continue link
-        await clickIfExists(page, SOCIO_ECONOMIC.CONTINUE_LINK, {
-            description: 'Second Continue link',
-            timeout: TIMEOUTS.SHORT
+        // Main household occupation (Prefer not to say)
+        await selectRadioIfExists(page, SOCIO_ECONOMIC.OCCUPATION_PREFER_NOT, {
+            description: 'Main household occupation: Prefer not to say'
         });
+        await delay(500);
 
-        await delay(TIMEOUTS.SHORT);
-
-        // Main household occupation
-        await selectRadioIfExists(page, SOCIO_ECONOMIC.OCCUPATION, {
-            description: 'Main household occupation - Prefer not to say'
+        // School type (Prefer not to say)
+        await selectRadioIfExists(page, SOCIO_ECONOMIC.SCHOOL_TYPE_PREFER_NOT, {
+            description: 'School type: Prefer not to say'
         });
+        await delay(500);
 
+        // Free school meals (Prefer not to say)
+        await selectRadioIfExists(page, SOCIO_ECONOMIC.FREE_MEALS_PREFER_NOT, {
+            description: 'Free school meals: Prefer not to say'
+        });
         await delay(1000);
 
+        // Click save/continue
         await clickIfExists(page, SOCIO_ECONOMIC.SAVE_CONTINUE, {
             description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // School type
-        await selectRadioIfExists(page, SOCIO_ECONOMIC.SCHOOL_TYPE, {
-            description: 'School type - Prefer not to say'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, SOCIO_ECONOMIC.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Free school meals
-        await selectRadioIfExists(page, SOCIO_ECONOMIC.FREE_SCHOOL_MEALS, {
-            description: 'Free school meals - Prefer not to say'
-        });
-
-        await delay(1000);
-
-        await clickIfExists(page, SOCIO_ECONOMIC.SAVE_CONTINUE, {
-            description: 'Save and Continue button'
-        });
-
-        await delay(TIMEOUTS.SHORT);
-
-        // Final Continue button
-        await clickIfExists(page, SOCIO_ECONOMIC.CONTINUE, {
-            description: 'Final Continue button',
-            timeout: TIMEOUTS.SHORT
         });
 
         await delay(TIMEOUTS.SHORT);

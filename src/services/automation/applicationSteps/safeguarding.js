@@ -24,13 +24,15 @@ async function completeSafeguarding(page) {
 
         await delay(TIMEOUTS.SHORT);
 
-        // Click continue first (some pages have an intro)
-        await clickIfExists(page, SAFEGUARDING.CONTINUE, {
-            description: 'Continue button',
+        // Click the continue LINK to start the section (not a button)
+        const continueClicked = await clickIfExists(page, SAFEGUARDING.CONTINUE_LINK, {
+            description: 'Continue link to start section',
             timeout: TIMEOUTS.SHORT
         });
 
-        await delay(TIMEOUTS.SHORT);
+        if (continueClicked) {
+            await delay(TIMEOUTS.SHORT);
+        }
 
         // Select NO for convictions
         await selectRadioIfExists(page, SAFEGUARDING.NO_CONVICTIONS, {
