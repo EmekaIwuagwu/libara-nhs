@@ -85,7 +85,7 @@
                 <div class="card border-red-200">
                     <h2 class="text-2xl font-semibold text-red-600 mb-4">Danger Zone</h2>
                     <p class="text-slate-600 mb-4">Disabling your account will prevent you from logging in and accessing your data.</p>
-                    <form action="/dashboard/settings/disable" method="POST" onsubmit="return confirm('Are you sure you want to disable your account?')">
+                    <form id="disableAccountForm" action="/dashboard/settings/disable" method="POST">
                         <button type="submit" class="btn btn-danger">Disable Account</button>
                     </form>
                 </div>
@@ -109,7 +109,7 @@
                         <p class="text-2xl font-bold text-primary mb-2">£0</p>
                         <p class="text-sm text-slate-600 mb-4">5 apps/month</p>
                         <% if (subscription.plan !== 'free') { %>
-                            <button onclick="upgradePlan('free')" class="btn btn-secondary text-sm">Downgrade</button>
+                            <button data-action="upgrade-plan" data-plan="free" class="btn btn-secondary text-sm">Downgrade</button>
                         <% } else { %>
                             <span class="text-primary font-semibold">Current Plan</span>
                         <% } %>
@@ -120,7 +120,7 @@
                         <p class="text-2xl font-bold text-primary mb-2">£29</p>
                         <p class="text-sm text-slate-600 mb-4">50 apps/month</p>
                         <% if (subscription.plan !== 'pro') { %>
-                            <button onclick="upgradePlan('pro')" class="btn btn-primary text-sm">Upgrade</button>
+                            <button data-action="upgrade-plan" data-plan="pro" class="btn btn-primary text-sm">Upgrade</button>
                         <% } else { %>
                             <span class="text-primary font-semibold">Current Plan</span>
                         <% } %>
@@ -131,7 +131,7 @@
                         <p class="text-2xl font-bold text-primary mb-2">£79</p>
                         <p class="text-sm text-slate-600 mb-4">Unlimited</p>
                         <% if (subscription.plan !== 'max') { %>
-                            <button onclick="upgradePlan('max')" class="btn btn-primary text-sm">Upgrade</button>
+                            <button data-action="upgrade-plan" data-plan="max" class="btn btn-primary text-sm">Upgrade</button>
                         <% } else { %>
                             <span class="text-primary font-semibold">Current Plan</span>
                         <% } %>
@@ -143,7 +143,7 @@
             <div class="tab-content hidden" id="nhs">
                 <div class="card mb-6">
                     <h2 class="text-2xl font-semibold text-slate-800 mb-4">NHS Scotland Credentials</h2>
-                    <form onsubmit="saveCredentials(event, 'scotland')" class="space-y-4">
+                    <form id="scotlandCredentialsForm" data-portal="scotland" class="nhs-credentials-form space-y-4">
                         <div>
                             <label for="scotland_username" class="label">Username</label>
                             <input type="text" id="scotland_username" name="username" class="input" required>
@@ -158,7 +158,7 @@
 
                 <div class="card">
                     <h2 class="text-2xl font-semibold text-slate-800 mb-4">NHS England Credentials</h2>
-                    <form onsubmit="saveCredentials(event, 'england')" class="space-y-4">
+                    <form id="englandCredentialsForm" data-portal="england" class="nhs-credentials-form space-y-4">
                         <div>
                             <label for="england_username" class="label">Username</label>
                             <input type="text" id="england_username" name="username" class="input" required>
@@ -196,35 +196,74 @@
             });
         });
 
-        async function saveCredentials(e, portal) {
-            e.preventDefault();
-            const form = e.target;
-            const data = {
-                portal,
-                username: form.username.value,
-                password: form.password.value
-            };
+        // NHS Credentials form submission with event delegation
+        document.querySelectorAll('.nhs-credentials-form').forEach(form => {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const portal = this.dataset.portal;
+                const data = {
+                    portal,
+                    username: this.username.value,
+                    password: this.password.value
+                };
+
+                try {
+                    const response = await fetch('/dashboard/settings/nhs-credentials', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('NHS credentials saved successfully!');
+                        // Optionally clear the form
+                        this.password.value = '';
+                    } else {
+                        alert('Error: ' + (result.message || 'Failed to save credentials'));
+                    }
+                } catch (error) {
+                    console.error('Error saving credentials:', error);
+                    alert('An error occurred while saving credentials');
+                }
+            });
+        });
+
+        // Upgrade plan button clicks with event delegation
+        document.addEventListener('click', async function(e) {
+            const button = e.target.closest('[data-action="upgrade-plan"]');
+            if (!button) return;
+
+            const plan = button.dataset.plan;
 
             try {
-                const response = await fetch('/dashboard/settings/nhs-credentials', {
+                const response = await fetch('/dashboard/settings/upgrade', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({ plan })
                 });
-                const result = await response.json();
-                alert(result.success ? 'Credentials saved successfully!' : result.message);
-            } catch (error) {
-                alert('An error occurred');
-            }
-        }
 
-        function upgradePlan(plan) {
-            fetch('/dashboard/settings/upgrade', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plan })
-            }).then(() => window.location.reload());
-        }
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Plan updated successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to update plan'));
+                }
+            } catch (error) {
+                console.error('Error upgrading plan:', error);
+                alert('An error occurred while updating plan');
+            }
+        });
+
+        // Disable account form confirmation
+        document.getElementById('disableAccountForm')?.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to disable your account? This action cannot be undone.')) {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>
