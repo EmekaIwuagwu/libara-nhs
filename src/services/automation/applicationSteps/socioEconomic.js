@@ -24,21 +24,31 @@ async function completeSocioEconomic(page) {
 
         await delay(TIMEOUTS.SHORT);
 
-        // Main household occupation
-        await selectRadioIfExists(page, SOCIO_ECONOMIC.OCCUPATION, {
-            description: 'Main household occupation option'
+        // Click the continue LINK to start the section
+        const continueClicked = await clickIfExists(page, SOCIO_ECONOMIC.CONTINUE_LINK, {
+            description: 'Continue link to start section',
+            timeout: TIMEOUTS.SHORT
+        });
+
+        if (continueClicked) {
+            await delay(TIMEOUTS.SHORT);
+        }
+
+        // Main household occupation (Prefer not to say)
+        await selectRadioIfExists(page, SOCIO_ECONOMIC.OCCUPATION_PREFER_NOT, {
+            description: 'Main household occupation: Prefer not to say'
         });
         await delay(500);
 
-        // School type
-        await selectRadioIfExists(page, SOCIO_ECONOMIC.SCHOOL_TYPE, {
-            description: 'School type option'
+        // School type (Prefer not to say)
+        await selectRadioIfExists(page, SOCIO_ECONOMIC.SCHOOL_TYPE_PREFER_NOT, {
+            description: 'School type: Prefer not to say'
         });
         await delay(500);
 
-        // Free school meals
-        await selectRadioIfExists(page, SOCIO_ECONOMIC.FREE_SCHOOL_MEALS, {
-            description: 'Free school meals option'
+        // Free school meals (Prefer not to say)
+        await selectRadioIfExists(page, SOCIO_ECONOMIC.FREE_MEALS_PREFER_NOT, {
+            description: 'Free school meals: Prefer not to say'
         });
         await delay(1000);
 
