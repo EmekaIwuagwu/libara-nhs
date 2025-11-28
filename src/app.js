@@ -34,6 +34,9 @@ app.set('trust proxy', 1);
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// Disable view caching to ensure template changes are reflected immediately
+// Note: In production, you may want to enable this for performance by setting to true
+app.set('view cache', false);
 
 // Security middleware
 app.use(helmet({
