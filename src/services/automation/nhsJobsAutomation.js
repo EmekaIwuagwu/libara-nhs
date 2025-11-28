@@ -255,14 +255,51 @@ class NHSJobsAutomation {
         };
 
         try {
-            // Click Start Application if present
-            const started = await clickIfExists(this.page, APPLICATION.START_APPLICATION_BUTTON, {
-                description: 'Start Application button',
+            // Take screenshot of current page to debug
+            await takeScreenshot(this.page, `before-start-application-${Date.now()}`);
+            console.log(`[APPLICATION] Current URL: ${this.page.url()}`);
+
+            // Try to find and click "Start Application" button
+            // The button might be a regular button, not an input
+            let started = false;
+
+            // Try Method 1: Input button with value
+            started = await clickIfExists(this.page, APPLICATION.START_APPLICATION_BUTTON, {
+                description: 'Start Application button (input)',
                 timeout: TIMEOUTS.SHORT
             });
 
+            // Try Method 2: Regular button with text
+            if (!started) {
+                console.log('[APPLICATION] Trying button element with "Start Application" text...');
+                const buttons = await this.page.$x("//button[contains(text(), 'Start Application') or contains(text(), 'Start application')]");
+                if (buttons.length > 0) {
+                    await buttons[0].click();
+                    started = true;
+                    console.log('[APPLICATION] Clicked Start Application button (xpath)');
+                    await delay(TIMEOUTS.MEDIUM);
+                }
+            }
+
+            // Try Method 3: Link with "Apply" text
+            if (!started) {
+                console.log('[APPLICATION] Trying link with "Apply" text...');
+                const applyLinks = await this.page.$x("//a[contains(text(), 'Apply') or contains(text(), 'apply')]");
+                if (applyLinks.length > 0) {
+                    await applyLinks[0].click();
+                    started = true;
+                    console.log('[APPLICATION] Clicked Apply link (xpath)');
+                    await delay(TIMEOUTS.MEDIUM);
+                }
+            }
+
             if (started) {
                 await delay(TIMEOUTS.MEDIUM);
+                await takeScreenshot(this.page, `after-start-application-${Date.now()}`);
+                console.log(`[APPLICATION] After start, URL: ${this.page.url()}`);
+            } else {
+                console.log('[APPLICATION] WARNING: Could not find Start Application button');
+                await takeScreenshot(this.page, `no-start-button-${Date.now()}`);
             }
 
             // Step 1: Contact Details
