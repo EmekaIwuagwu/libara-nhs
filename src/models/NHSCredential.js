@@ -3,13 +3,40 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 class NHSCredential {
+  // Get or generate a valid 32-byte encryption key
+  static getEncryptionKey() {
+    let key = process.env.ENCRYPTION_KEY;
+
+    // If no key is set, use a default
+    if (!key || key.length === 0) {
+      console.warn('[ENCRYPTION] No ENCRYPTION_KEY found in .env, using default key. Please set a secure 32-character key in production!');
+      key = 'default-32-char-key-change-me!';
+    }
+
+    // Convert to buffer
+    let keyBuffer = Buffer.from(key, 'utf8');
+
+    // Ensure it's exactly 32 bytes for AES-256
+    if (keyBuffer.length < 32) {
+      // Pad with zeros if too short
+      const paddedKey = Buffer.alloc(32);
+      keyBuffer.copy(paddedKey);
+      return paddedKey;
+    } else if (keyBuffer.length > 32) {
+      // Truncate if too long
+      return keyBuffer.slice(0, 32);
+    }
+
+    return keyBuffer;
+  }
+
   // Encryption helper functions
   static encrypt(text) {
     const algorithm = 'aes-256-gcm';
-    const key = Buffer.from(process.env.ENCRYPTION_KEY || 'default-32-char-key-change-me!', 'utf8');
+    const key = this.getEncryptionKey();
     const iv = crypto.randomBytes(16);
 
-    const cipher = crypto.createCipheriv(algorithm, key.slice(0, 32), iv);
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
@@ -21,14 +48,14 @@ class NHSCredential {
   static decrypt(encryptedText) {
     try {
       const algorithm = 'aes-256-gcm';
-      const key = Buffer.from(process.env.ENCRYPTION_KEY || 'default-32-char-key-change-me!', 'utf8');
+      const key = this.getEncryptionKey();
 
       const parts = encryptedText.split(':');
       const iv = Buffer.from(parts[0], 'hex');
       const authTag = Buffer.from(parts[1], 'hex');
       const encrypted = parts[2];
 
-      const decipher = crypto.createDecipheriv(algorithm, key.slice(0, 32), iv);
+      const decipher = crypto.createDecipheriv(algorithm, key, iv);
       decipher.setAuthTag(authTag);
 
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
