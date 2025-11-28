@@ -330,13 +330,47 @@
             const result = await response.json();
 
             if (result.success) {
-                addLog('Automation completed successfully!');
-                showStatus('Automation completed successfully!', 'success');
-                showResults(result.summary, true);
+                addLog(result.message || 'Automation started successfully!');
+                if (result.info) {
+                    addLog(result.info);
+                }
+                addLog('You can close this window. The automation will continue in the background.');
+                addLog('Check your email when the automation completes (typically 10-20 minutes).');
+                showStatus('Automation running in background!', 'success');
+
+                // Show success message in results section
+                resultsSection.classList.remove('hidden');
+                resultsContent.innerHTML = `
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 text-blue-800 font-semibold mb-2">
+                            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Automation Running
+                        </div>
+                        <p class="text-slate-700 mb-2">
+                            Your automation is running in the background! This typically takes 10-20 minutes.
+                        </p>
+                        <p class="text-slate-600 text-sm">
+                            You'll receive an email summary when complete. You can safely close this window.
+                        </p>
+                    </div>
+                `;
             } else {
                 addLog('Automation failed: ' + result.error);
                 showStatus('Automation failed', 'error');
-                showResults({ error: result.error }, false);
+                resultsSection.classList.remove('hidden');
+                resultsContent.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 text-red-800 font-semibold mb-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Automation Failed
+                        </div>
+                        <p class="text-slate-700">${result.error}</p>
+                    </div>
+                `;
             }
 
         } catch (error) {
