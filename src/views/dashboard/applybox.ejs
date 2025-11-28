@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - LibaraNHS</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="bg-slate-50">
+    <%- include('../partials/sidebar') %>
+
+    <div class="ml-64 p-8">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">📦 Apply Box</h1>
+            <p class="text-slate-600 mb-8">Automate your NHS job applications with ease</p>
+
+            <% if (successMessage) { %>
+                <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
+                    <%= successMessage %>
+                </div>
+            <% } %>
+
+            <% if (errorMessage) { %>
+                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+                    <%= errorMessage %>
+                </div>
+            <% } %>
+
+            <!-- Prerequisites Check -->
+            <div class="card mb-8">
+                <h2 class="text-2xl font-semibold text-slate-800 mb-4">Prerequisites Check</h2>
+
+                <div class="space-y-3">
+                    <!-- NHS Credentials Check -->
+                    <div class="flex items-center gap-3">
+                        <% if (hasNHSEnglandCredentials) { %>
+                            <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-slate-700">NHS England credentials saved</span>
+                        <% } else { %>
+                            <div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                            <span class="text-slate-700">NHS England credentials not saved - <a href="/dashboard/settings" class="text-lime-600 hover:underline">Add in Settings</a></span>
+                        <% } %>
+                    </div>
+
+                    <!-- Text Resume Check -->
+                    <div class="flex items-center gap-3">
+                        <% if (textResumes && textResumes.length > 0) { %>
+                            <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-slate-700">Text resume available (<%= textResumes.length %> saved)</span>
+                        <% } else { %>
+                            <div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                            <span class="text-slate-700">No text resume found - <a href="/dashboard/resume" class="text-lime-600 hover:underline">Create one</a></span>
+                        <% } %>
+                    </div>
+
+                    <!-- Application Config Check -->
+                    <div class="flex items-center gap-3">
+                        <% if (configs && configs.length > 0) { %>
+                            <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-slate-700">Application configuration available (<%= configs.length %> saved)</span>
+                        <% } else { %>
+                            <div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                            <span class="text-slate-700">No application config found - <a href="/config" class="text-lime-600 hover:underline">Create one</a></span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Automation Form -->
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-slate-800 mb-4">Start Automation</h2>
+
+                <form id="automationForm" class="space-y-6">
+                    <!-- Portal Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Select Portal</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="portal" value="england" checked class="text-lime-600 focus:ring-lime-500">
+                                <span>NHS England (jobs.nhs.uk)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer opacity-50">
+                                <input type="radio" name="portal" value="scotland" disabled>
+                                <span>NHS Scotland (Coming Soon)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Selection -->
+                    <div>
+                        <label for="configId" class="block text-sm font-medium text-slate-700 mb-2">Select Configuration</label>
+                        <select id="configId" name="configId" class="w-full rounded-lg border-slate-300 focus:border-lime-500 focus:ring-lime-500 px-4 py-2" required>
+                            <option value="">-- Select a configuration --</option>
+                            <% if (configs && configs.length > 0) { %>
+                                <% configs.forEach(config => { %>
+                                    <option value="<%= config.id %>">
+                                        <%= config.config_name %> - <%= config.job_title %> (<%= config.job_location %>)
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <!-- Max Applications -->
+                    <div>
+                        <label for="maxApplications" class="block text-sm font-medium text-slate-700 mb-2">Maximum Applications</label>
+                        <select id="maxApplications" name="maxApplications" class="w-full rounded-lg border-slate-300 focus:border-lime-500 focus:ring-lime-500 px-4 py-2">
+                            <option value="1">1 Application</option>
+                            <option value="3">3 Applications</option>
+                            <option value="5" selected>5 Applications</option>
+                            <option value="10">10 Applications</option>
+                        </select>
+                        <p class="mt-1 text-sm text-slate-500">Number of jobs to apply for in this session</p>
+                    </div>
+
+                    <!-- Start Button -->
+                    <div class="pt-4">
+                        <button type="submit" id="startBtn"
+                            class="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            <%= (!hasNHSEnglandCredentials || !textResumes.length || !configs.length) ? 'disabled' : '' %>>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Start Automation</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Progress Section (hidden by default) -->
+                <div id="progressSection" class="hidden mt-6 pt-6 border-t border-slate-200">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-lime-600"></div>
+                        <span class="text-slate-700 font-medium">Automation in progress...</span>
+                    </div>
+                    <div id="progressLog" class="bg-slate-50 rounded-lg p-4 h-64 overflow-y-auto font-mono text-sm text-slate-600">
+                        <!-- Progress logs will appear here -->
+                    </div>
+                </div>
+
+                <!-- Results Section (hidden by default) -->
+                <div id="resultsSection" class="hidden mt-6 pt-6 border-t border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Results</h3>
+                    <div id="resultsContent">
+                        <!-- Results will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.getElementById('automationForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const startBtn = document.getElementById('startBtn');
+        const progressSection = document.getElementById('progressSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const progressLog = document.getElementById('progressLog');
+        const resultsContent = document.getElementById('resultsContent');
+
+        // Disable form and show progress
+        startBtn.disabled = true;
+        startBtn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div><span>Processing...</span>';
+        progressSection.classList.remove('hidden');
+        resultsSection.classList.add('hidden');
+        progressLog.innerHTML = '';
+
+        // Add initial log
+        addLog('Starting automation process...');
+
+        try {
+            const formData = new FormData(form);
+            const data = {
+                configId: formData.get('configId'),
+                portal: formData.get('portal'),
+                maxApplications: formData.get('maxApplications')
+            };
+
+            addLog('Connecting to NHS Jobs portal...');
+
+            const response = await fetch('/dashboard/applybox/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                addLog('Automation completed successfully!');
+                showResults(result.summary, true);
+            } else {
+                addLog('Automation failed: ' + result.error);
+                showResults({ error: result.error }, false);
+            }
+
+        } catch (error) {
+            addLog('Error: ' + error.message);
+            showResults({ error: error.message }, false);
+        } finally {
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Start Automation</span>';
+        }
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            progressLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            progressLog.scrollTop = progressLog.scrollHeight;
+        }
+
+        function showResults(data, success) {
+            resultsSection.classList.remove('hidden');
+
+            if (success) {
+                resultsContent.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 text-green-800 font-semibold mb-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Automation Completed
+                        </div>
+                        <p class="text-slate-700">
+                            Successfully submitted ${data.successful} out of ${data.total} applications.
+                        </p>
+                        <p class="text-slate-600 text-sm mt-2">
+                            Check your email for detailed results. You can also view your application history on the Dashboard.
+                        </p>
+                    </div>
+                `;
+            } else {
+                resultsContent.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 text-red-800 font-semibold mb-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Automation Failed
+                        </div>
+                        <p class="text-slate-700">${data.error}</p>
+                    </div>
+                `;
+            }
+        }
+    });
+    </script>
+</body>
+</html>
