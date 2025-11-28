@@ -57,17 +57,16 @@ async function startAutomation(userId, configId, options = {}) {
 
         // Save results to database
         for (const result of results) {
-            // Note: We're using textResume.id but the applications table expects a resume_id
-            // This is a simplification - in production you might want to add text_resume_id column
-            // or create a relationship between text_resumes and applications
             try {
                 await Application.create({
                     user_id: userId,
                     config_id: configId,
-                    resume_id: textResume.id, // Using text_resume_id - may need schema adjustment
+                    resume_id: null, // Set to null when using text resume
+                    text_resume_id: textResume.id, // Use text_resume_id for text resumes
                     portal: 'england',
                     job_reference: result.referenceNumber,
                     job_title: result.jobTitle,
+                    employer: result.employer || null,
                     status: result.success ? 'submitted' : 'failed',
                     error_message: result.error,
                     submission_date: result.success ? new Date() : null

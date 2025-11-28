@@ -31,6 +31,12 @@ async function completeGuaranteedInterview(page) {
 
         await delay(1000);
 
+        await clickIfExists(page, GUARANTEED_INTERVIEW.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
         // Select NO for armed forces veteran
         await selectRadioIfExists(page, GUARANTEED_INTERVIEW.NO_ARMED_FORCES, {
             description: 'No armed forces veteran option'
@@ -38,9 +44,16 @@ async function completeGuaranteedInterview(page) {
 
         await delay(1000);
 
-        // Click save/continue
         await clickIfExists(page, GUARANTEED_INTERVIEW.SAVE_CONTINUE, {
             description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
+        // Final Continue button
+        await clickIfExists(page, GUARANTEED_INTERVIEW.CONTINUE, {
+            description: 'Final Continue button',
+            timeout: TIMEOUTS.SHORT
         });
 
         await delay(TIMEOUTS.SHORT);

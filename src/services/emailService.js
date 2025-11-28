@@ -66,6 +66,52 @@ class EmailService {
     // TODO: Implement email verification template
     console.log(`Verification email would be sent to ${email} with link: ${verificationLink}`);
   }
+
+  /**
+   * Send application summary email after automation completes
+   * @param {string} email - User email
+   * @param {Object} data - Summary data
+   * @param {string} data.firstName - User first name
+   * @param {Object} data.summary - Summary object with total, successful, failed counts
+   * @param {Array} data.results - Array of application results
+   */
+  static async sendApplicationSummary(email, data) {
+    const { firstName, summary, results } = data;
+
+    console.log(`[EMAIL] Application summary email would be sent to ${email}`);
+    console.log(`[EMAIL] Summary: ${summary.successful}/${summary.total} applications submitted`);
+
+    // TODO: Implement proper email template with summary details
+    // For now, just log the summary
+    if (results && results.length > 0) {
+      console.log('[EMAIL] Application results:');
+      results.forEach((result, index) => {
+        console.log(`  ${index + 1}. ${result.jobTitle} - ${result.success ? 'SUCCESS' : 'FAILED'}`);
+        if (result.referenceNumber) {
+          console.log(`     Reference: ${result.referenceNumber}`);
+        }
+        if (result.error) {
+          console.log(`     Error: ${result.error}`);
+        }
+      });
+    }
+  }
+
+  /**
+   * Send automation error email when automation fails
+   * @param {string} email - User email
+   * @param {Object} data - Error data
+   * @param {string} data.firstName - User first name
+   * @param {string} data.error - Error message
+   */
+  static async sendAutomationError(email, data) {
+    const { firstName, error } = data;
+
+    console.log(`[EMAIL] Automation error email would be sent to ${email}`);
+    console.log(`[EMAIL] Error: ${error}`);
+
+    // TODO: Implement proper email template for automation errors
+  }
 }
 
 module.exports = EmailService;

@@ -44,6 +44,14 @@ async function completeCVInput(page, cvText) {
 
         await delay(TIMEOUTS.SHORT);
 
+        // Click continue to go to next page
+        await clickIfExists(page, CV.CONTINUE, {
+            description: 'Continue button',
+            timeout: TIMEOUTS.SHORT
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
         console.log('[STEP] CV Input completed successfully');
         return true;
 
