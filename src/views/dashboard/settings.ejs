@@ -211,21 +211,36 @@
                 try {
                     const response = await fetch('/dashboard/settings/nhs-credentials', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
                         body: JSON.stringify(data)
                     });
+
+                    if (!response.ok) {
+                        const result = await response.json();
+                        if (result.errors && Array.isArray(result.errors)) {
+                            const errorMessages = result.errors.map(e => e.msg).join('\n');
+                            alert('Validation errors:\n' + errorMessages);
+                        } else {
+                            alert('Error: ' + (result.message || 'Failed to save credentials'));
+                        }
+                        return;
+                    }
+
                     const result = await response.json();
 
                     if (result.success) {
                         alert('NHS credentials saved successfully!');
-                        // Optionally clear the form
+                        // Clear the password field
                         this.password.value = '';
                     } else {
                         alert('Error: ' + (result.message || 'Failed to save credentials'));
                     }
                 } catch (error) {
                     console.error('Error saving credentials:', error);
-                    alert('An error occurred while saving credentials');
+                    alert('An error occurred while saving credentials: ' + error.message);
                 }
             });
         });
@@ -240,7 +255,10 @@
             try {
                 const response = await fetch('/dashboard/settings/upgrade', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ plan })
                 });
 
