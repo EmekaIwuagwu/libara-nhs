@@ -137,17 +137,35 @@
                         <p class="mt-1 text-sm text-slate-500">Number of jobs to apply for in this session</p>
                     </div>
 
-                    <!-- Start Button -->
+                    <!-- Action Buttons -->
                     <div class="pt-4">
-                        <button type="submit" id="startBtn"
-                            class="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            <%= (!hasNHSEnglandCredentials || !textResumes.length || !configs.length) ? 'disabled' : '' %>>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span>Start Automation</span>
-                        </button>
+                        <div class="flex gap-3">
+                            <!-- Start Button -->
+                            <button type="submit" id="startBtn"
+                                class="flex-1 bg-lime-600 hover:bg-lime-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                <%= (!hasNHSEnglandCredentials || !textResumes.length || !configs.length) ? 'disabled' : '' %>>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Start Automation</span>
+                            </button>
+
+                            <!-- Stop Button (hidden by default) -->
+                            <button type="button" id="stopBtn"
+                                class="hidden flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                                </svg>
+                                <span>Stop Automation</span>
+                            </button>
+                        </div>
+
+                        <!-- Status Message -->
+                        <div id="statusMessage" class="hidden mt-3 text-center text-sm">
+                            <!-- Dynamic status messages will appear here -->
+                        </div>
                     </div>
                 </form>
 
@@ -174,19 +192,115 @@
     </div>
 
     <script>
-    document.getElementById('automationForm').addEventListener('submit', async function(e) {
+    // Global variables for automation control
+    let abortController = null;
+    let isAutomationRunning = false;
+
+    // Get elements
+    const form = document.getElementById('automationForm');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const progressSection = document.getElementById('progressSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const progressLog = document.getElementById('progressLog');
+    const resultsContent = document.getElementById('resultsContent');
+
+    // Helper functions
+    function addLog(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        progressLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+        progressLog.scrollTop = progressLog.scrollHeight;
+    }
+
+    function showStatus(message, type = 'info') {
+        statusMessage.classList.remove('hidden', 'text-blue-600', 'text-green-600', 'text-red-600', 'text-yellow-600');
+
+        const colorClass = {
+            'info': 'text-blue-600',
+            'success': 'text-green-600',
+            'error': 'text-red-600',
+            'warning': 'text-yellow-600'
+        }[type] || 'text-blue-600';
+
+        statusMessage.classList.add(colorClass);
+        statusMessage.textContent = message;
+    }
+
+    function setButtonStates(running) {
+        isAutomationRunning = running;
+
+        if (running) {
+            // Hide Start button, show Stop button
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            showStatus('Automation in progress...', 'info');
+        } else {
+            // Show Start button, hide Stop button
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            statusMessage.classList.add('hidden');
+
+            // Reset Start button text
+            startBtn.disabled = false;
+            startBtn.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Start Automation</span>
+            `;
+        }
+    }
+
+    function showResults(data, success) {
+        resultsSection.classList.remove('hidden');
+
+        if (success) {
+            resultsContent.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center gap-2 text-green-800 font-semibold mb-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Automation Completed
+                    </div>
+                    <p class="text-slate-700">
+                        Successfully submitted ${data.successful} out of ${data.total} applications.
+                    </p>
+                    <p class="text-slate-600 text-sm mt-2">
+                        Check your email for detailed results. You can also view your application history on the Dashboard.
+                    </p>
+                </div>
+            `;
+        } else {
+            resultsContent.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center gap-2 text-red-800 font-semibold mb-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Automation Failed
+                    </div>
+                    <p class="text-slate-700">${data.error}</p>
+                </div>
+            `;
+        }
+    }
+
+    // Start automation handler
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const form = e.target;
-        const startBtn = document.getElementById('startBtn');
-        const progressSection = document.getElementById('progressSection');
-        const resultsSection = document.getElementById('resultsSection');
-        const progressLog = document.getElementById('progressLog');
-        const resultsContent = document.getElementById('resultsContent');
+        if (isAutomationRunning) {
+            return; // Prevent multiple simultaneous runs
+        }
 
-        // Disable form and show progress
-        startBtn.disabled = true;
-        startBtn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div><span>Processing...</span>';
+        // Create abort controller for this automation run
+        abortController = new AbortController();
+
+        // Update UI to running state
+        setButtonStates(true);
         progressSection.classList.remove('hidden');
         resultsSection.classList.add('hidden');
         progressLog.innerHTML = '';
@@ -209,66 +323,53 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
+                signal: abortController.signal
             });
 
             const result = await response.json();
 
             if (result.success) {
                 addLog('Automation completed successfully!');
+                showStatus('Automation completed successfully!', 'success');
                 showResults(result.summary, true);
             } else {
                 addLog('Automation failed: ' + result.error);
+                showStatus('Automation failed', 'error');
                 showResults({ error: result.error }, false);
             }
 
         } catch (error) {
-            addLog('Error: ' + error.message);
-            showResults({ error: error.message }, false);
-        } finally {
-            startBtn.disabled = false;
-            startBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Start Automation</span>';
-        }
-
-        function addLog(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            progressLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-            progressLog.scrollTop = progressLog.scrollHeight;
-        }
-
-        function showResults(data, success) {
-            resultsSection.classList.remove('hidden');
-
-            if (success) {
-                resultsContent.innerHTML = `
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div class="flex items-center gap-2 text-green-800 font-semibold mb-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Automation Completed
-                        </div>
-                        <p class="text-slate-700">
-                            Successfully submitted ${data.successful} out of ${data.total} applications.
-                        </p>
-                        <p class="text-slate-600 text-sm mt-2">
-                            Check your email for detailed results. You can also view your application history on the Dashboard.
-                        </p>
-                    </div>
-                `;
+            if (error.name === 'AbortError') {
+                addLog('Automation stopped by user');
+                showStatus('Automation stopped', 'warning');
+                showResults({ error: 'Automation was stopped by user' }, false);
             } else {
-                resultsContent.innerHTML = `
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div class="flex items-center gap-2 text-red-800 font-semibold mb-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Automation Failed
-                        </div>
-                        <p class="text-slate-700">${data.error}</p>
-                    </div>
-                `;
+                addLog('Error: ' + error.message);
+                showStatus('Automation error', 'error');
+                showResults({ error: error.message }, false);
             }
+        } finally {
+            // Reset to idle state
+            setButtonStates(false);
+            abortController = null;
+        }
+    });
+
+    // Stop automation handler
+    stopBtn.addEventListener('click', function() {
+        if (abortController && isAutomationRunning) {
+            // Abort the fetch request
+            abortController.abort();
+            addLog('Stop requested by user...');
+            showStatus('Stopping automation...', 'warning');
+
+            // Disable stop button while stopping
+            stopBtn.disabled = true;
+            stopBtn.innerHTML = `
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Stopping...</span>
+            `;
         }
     });
     </script>
