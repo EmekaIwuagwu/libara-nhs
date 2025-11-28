@@ -6,28 +6,36 @@ class Application {
       user_id,
       config_id,
       resume_id,
+      text_resume_id,
       portal,
       job_reference,
       job_title,
       employer,
-      cover_letter
+      cover_letter,
+      status,
+      error_message,
+      submission_date
     } = applicationData;
 
     const sql = `
       INSERT INTO applications
-      (user_id, config_id, resume_id, portal, job_reference, job_title, employer, cover_letter, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+      (user_id, config_id, resume_id, text_resume_id, portal, job_reference, job_title, employer, cover_letter, status, error_message, submission_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await query(sql, [
       user_id,
       config_id,
-      resume_id,
+      resume_id || null,
+      text_resume_id || null,
       portal,
       job_reference || null,
       job_title,
       employer || null,
-      cover_letter || null
+      cover_letter || null,
+      status || 'pending',
+      error_message || null,
+      submission_date || null
     ]);
 
     return result.insertId;
