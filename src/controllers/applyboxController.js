@@ -69,24 +69,30 @@ exports.startAutomation = async (req, res) => {
             });
         }
 
-        // Start automation (this will run asynchronously)
-        const result = await startAutomation(userId, parseInt(configId), {
+        // Start automation in background (fire-and-forget)
+        // Don't await - let it run asynchronously
+        startAutomation(userId, parseInt(configId), {
             maxApplications: parseInt(maxApplications) || 5,
             headless: true
+        })
+        .then(result => {
+            console.log('[APPLYBOX] Automation completed:', result.success ? 'SUCCESS' : 'FAILED');
+            if (result.success) {
+                console.log(`[APPLYBOX] ${result.summary.successful}/${result.summary.total} applications submitted`);
+            } else {
+                console.error('[APPLYBOX] Automation error:', result.error);
+            }
+        })
+        .catch(error => {
+            console.error('[APPLYBOX] Automation exception:', error);
         });
 
-        if (result.success) {
-            res.json({
-                success: true,
-                message: `Automation completed! ${result.summary.successful} applications submitted.`,
-                summary: result.summary
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                error: result.error
-            });
-        }
+        // Return immediately - don't wait for automation to complete
+        res.json({
+            success: true,
+            message: 'Automation started successfully!',
+            info: 'The automation is running in the background. You can close this window. Check your email for results when complete.'
+        });
 
     } catch (error) {
         console.error('[APPLYBOX] Automation error:', error);
