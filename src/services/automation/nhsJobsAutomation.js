@@ -195,7 +195,25 @@ class NHSJobsAutomation {
             }
 
             // Check for Apply button on job advert page
-            const applyButton = await this.page.$('a[href*="application"], button:has-text("Apply")');
+            // First try link with "application" in href
+            let applyButton = await this.page.$('a[href*="application"]');
+
+            // If not found, look for button with "Apply" text using XPath
+            if (!applyButton) {
+                const buttons = await this.page.$x("//button[contains(translate(text(), 'APPLY', 'apply'), 'apply')]");
+                if (buttons.length > 0) {
+                    applyButton = buttons[0];
+                }
+            }
+
+            // Also check for links with "Apply" text
+            if (!applyButton) {
+                const links = await this.page.$x("//a[contains(translate(text(), 'APPLY', 'apply'), 'apply')]");
+                if (links.length > 0) {
+                    applyButton = links[0];
+                }
+            }
+
             if (applyButton) {
                 await applyButton.click();
                 await delay(TIMEOUTS.MEDIUM);
