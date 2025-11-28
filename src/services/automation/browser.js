@@ -16,7 +16,29 @@ async function createBrowser(options = {}) {
 
     console.log('[BROWSER] Launching browser...');
 
+    const os = require('os');
+    const path = require('path');
+    const fs = require('fs');
+
+    // Try to find Chrome executable
+    const possiblePaths = [
+        path.join(os.homedir(), '.chrome/chrome-linux64/chrome'),
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser'
+    ];
+
+    let executablePath = null;
+    for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+            executablePath = p;
+            console.log(`[BROWSER] Found Chrome at: ${executablePath}`);
+            break;
+        }
+    }
+
     const browser = await puppeteer.launch({
+        executablePath,
         headless: headless ? 'new' : false,
         slowMo,
         args: [
