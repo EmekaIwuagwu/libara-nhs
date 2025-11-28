@@ -46,6 +46,14 @@ async function completeSafeguarding(page) {
 
         await delay(TIMEOUTS.SHORT);
 
+        // Click final continue to save and move to next screen
+        await clickIfExists(page, SAFEGUARDING.CONTINUE, {
+            description: 'Final Continue button',
+            timeout: TIMEOUTS.SHORT
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
         console.log('[STEP] Safeguarding completed successfully');
         return true;
 

@@ -15,7 +15,7 @@ module.exports = {
         USERNAME_INPUT: '#username',
         PASSWORD_INPUT: '#password',
         SUBMIT_BUTTON: '#submit-button',
-        GO_TO_SEARCH: 'span.nhsuk-action-link__text:has-text("Go to search")'
+        GO_TO_SEARCH: 'span.nhsuk-action-link__text' // Puppeteer compatible (no :has-text)
     },
 
     // Search selectors
@@ -50,14 +50,16 @@ module.exports = {
 
     // CV step
     CV: {
-        TASK_LINK: 'a[href*="/cv/input"]',
+        TASK_LINK: 'a[href*="/cv/input"]', // Keep href pattern as no ID provided
         CV_TEXTAREA: '#cv',
-        SAVE_CONTINUE: '#save_continue'
+        SAVE_CONTINUE: '#save_continue',
+        CONTINUE: '#continue'
     },
 
     // Safeguarding step
     SAFEGUARDING: {
-        TASK_LINK: 'a[href*="safeguarding"]',
+        TASK_LINK: '#safeguarding_task_link',
+        CONTINUE_LINK: '#continue', // Link/button before questions
         NO_CONVICTIONS: '#convictions_id_option_2',
         SAVE_CONTINUE: '#save_continue',
         CONTINUE: '#continue'
@@ -65,7 +67,8 @@ module.exports = {
 
     // Fitness to Practice step
     FITNESS_TO_PRACTICE: {
-        TASK_LINK: 'a[href*="fitness_to_practice"]',
+        TASK_LINK: '#fitness_to_practice_task_link',
+        CONTINUE_LINK: '#continue', // Link/button before questions
         NO_OPTION: '#answer_id_option_2',
         SAVE_CONTINUE: '#save_continue',
         CONTINUE: '#continue'
@@ -73,15 +76,17 @@ module.exports = {
 
     // Guaranteed Interview Scheme step
     GUARANTEED_INTERVIEW: {
-        TASK_LINK: 'a[href*="guaranteed_interview"]',
+        TASK_LINK: '#gis_task_link',
         NO_PHYSICAL_LIMITATION: '#physical_limitation_id_option_2',
         NO_ARMED_FORCES: '#armedForcesVeteran_id_option_2',
-        SAVE_CONTINUE: '#save_continue'
+        SAVE_CONTINUE: '#save_continue',
+        CONTINUE: '#continue'
     },
 
     // Equality & Diversity step
     EQUALITY_DIVERSITY: {
-        TASK_LINK: 'a[href*="equality"]',
+        TASK_LINK: '#equality_and_diversity_task_link',
+        CONTINUE_LINK: '#continue', // Link/button before questions
         GENDER: '#gender_choice_id_option_1',
         BIRTH_SEX_MATCH: '#gender_same_at_birth_id_option_1',
         MARITAL_STATUS: '#marital_status_id_option_2',
@@ -90,21 +95,24 @@ module.exports = {
         AGE_RANGE: '#age_range_id_option_7',
         ETHNICITY: '#ethnicity_id_option_18',
         RELIGION: '#religion_id_option_11',
-        SAVE_CONTINUE: '#save_continue'
+        SAVE_CONTINUE: '#save_continue',
+        CONTINUE: '#continue'
     },
 
     // Socio-Economic Background step
     SOCIO_ECONOMIC: {
-        TASK_LINK: 'a[href*="socio"]',
+        TASK_LINK: '#socio_economic_background_task_link',
+        CONTINUE_LINK: '#continue', // Link/button before questions
         OCCUPATION: '#mainHouseholdOccupation_option_10',
         SCHOOL_TYPE: '#attendedSchoolType_option_7',
         FREE_SCHOOL_MEALS: '#eligibleForFreeSchoolMeals_option_6',
-        SAVE_CONTINUE: '#save_continue'
+        SAVE_CONTINUE: '#save_continue',
+        CONTINUE: '#continue'
     },
 
     // Declaration step
     DECLARATION: {
-        TASK_LINK: 'a[href*="declaration"]',
+        TASK_LINK: 'a[href*="declaration"]', // Keep href pattern as no ID provided in docs
         AGREE_CHECKBOX: '#declaration_id',
         SEND_APPLICATION: '#send_application'
     },

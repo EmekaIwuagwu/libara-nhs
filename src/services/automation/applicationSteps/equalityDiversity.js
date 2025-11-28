@@ -24,58 +24,122 @@ async function completeEqualityDiversity(page) {
 
         await delay(TIMEOUTS.SHORT);
 
-        // Answer all questions
+        // Click Continue link at the start
+        await clickIfExists(page, EQUALITY_DIVERSITY.CONTINUE_LINK, {
+            description: 'Continue link',
+            timeout: TIMEOUTS.SHORT
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
         // Gender
         await selectRadioIfExists(page, EQUALITY_DIVERSITY.GENDER, {
-            description: 'Gender option'
+            description: 'Gender - Male'
         });
-        await delay(500);
 
-        // Birth sex match
-        await selectRadioIfExists(page, EQUALITY_DIVERSITY.BIRTH_SEX_MATCH, {
-            description: 'Birth sex match option'
+        await delay(1000);
+
+        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
         });
-        await delay(500);
+
+        await delay(TIMEOUTS.SHORT);
+
+        // Gender same as birth
+        await selectRadioIfExists(page, EQUALITY_DIVERSITY.BIRTH_SEX_MATCH, {
+            description: 'Gender same as birth - Yes'
+        });
+
+        await delay(1000);
+
+        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
 
         // Marital status
         await selectRadioIfExists(page, EQUALITY_DIVERSITY.MARITAL_STATUS, {
-            description: 'Marital status option'
+            description: 'Marital status - Single'
         });
-        await delay(500);
+
+        await delay(1000);
+
+        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
 
         // Pregnancy
         await selectRadioIfExists(page, EQUALITY_DIVERSITY.PREGNANCY, {
-            description: 'Pregnancy option'
+            description: 'Pregnancy - No'
         });
-        await delay(500);
+
+        await delay(1000);
+
+        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
 
         // Sexuality
         await selectRadioIfExists(page, EQUALITY_DIVERSITY.SEXUALITY, {
-            description: 'Sexuality option'
+            description: 'Sexuality - Prefer not to say'
         });
-        await delay(500);
+
+        await delay(1000);
+
+        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
 
         // Age range
         await selectRadioIfExists(page, EQUALITY_DIVERSITY.AGE_RANGE, {
-            description: 'Age range option'
+            description: 'Age range - Prefer not to say'
         });
-        await delay(500);
+
+        await delay(1000);
+
+        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
 
         // Ethnicity
         await selectRadioIfExists(page, EQUALITY_DIVERSITY.ETHNICITY, {
-            description: 'Ethnicity option'
+            description: 'Ethnicity - Prefer not to say'
         });
-        await delay(500);
+
+        await delay(1000);
+
+        await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
 
         // Religion
         await selectRadioIfExists(page, EQUALITY_DIVERSITY.RELIGION, {
-            description: 'Religion option'
+            description: 'Religion - Prefer not to say'
         });
+
         await delay(1000);
 
-        // Click save/continue
         await clickIfExists(page, EQUALITY_DIVERSITY.SAVE_CONTINUE, {
             description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
+        // Final Continue button
+        await clickIfExists(page, EQUALITY_DIVERSITY.CONTINUE, {
+            description: 'Final Continue button',
+            timeout: TIMEOUTS.SHORT
         });
 
         await delay(TIMEOUTS.SHORT);
