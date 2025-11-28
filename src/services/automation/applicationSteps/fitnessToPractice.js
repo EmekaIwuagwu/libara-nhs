@@ -34,37 +34,55 @@ async function completeFitnessToPractice(page) {
             await delay(TIMEOUTS.SHORT);
         }
 
-        // There might be multiple questions, answer NO to all
-        let questionCount = 0;
-        const maxQuestions = 5;
+        // There are 3 "No" questions to answer
+        // Question 1
+        await selectRadioIfExists(page, FITNESS_TO_PRACTICE.NO_OPTION, {
+            description: 'Question 1 - NO option'
+        });
 
-        while (questionCount < maxQuestions) {
-            const hasNoOption = await elementExists(page, FITNESS_TO_PRACTICE.NO_OPTION);
+        await delay(1000);
 
-            if (hasNoOption) {
-                await selectRadioIfExists(page, FITNESS_TO_PRACTICE.NO_OPTION, {
-                    description: `Fitness question ${questionCount + 1} - NO option`
-                });
+        await clickIfExists(page, FITNESS_TO_PRACTICE.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
 
-                await delay(1000);
+        await delay(TIMEOUTS.SHORT);
 
-                // Click continue for next question
-                const continued = await clickIfExists(page, FITNESS_TO_PRACTICE.SAVE_CONTINUE, {
-                    description: 'Save and Continue button'
-                });
+        // Question 2
+        await selectRadioIfExists(page, FITNESS_TO_PRACTICE.NO_OPTION, {
+            description: 'Question 2 - NO option'
+        });
 
-                if (!continued) {
-                    break;
-                }
+        await delay(1000);
 
-                await delay(TIMEOUTS.SHORT);
-                questionCount++;
-            } else {
-                break;
-            }
-        }
+        await clickIfExists(page, FITNESS_TO_PRACTICE.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
 
-        console.log(`[STEP] Fitness to Practice completed successfully (${questionCount} questions answered)`);
+        await delay(TIMEOUTS.SHORT);
+
+        // Question 3
+        await selectRadioIfExists(page, FITNESS_TO_PRACTICE.NO_OPTION, {
+            description: 'Question 3 - NO option'
+        });
+
+        await delay(1000);
+
+        await clickIfExists(page, FITNESS_TO_PRACTICE.SAVE_CONTINUE, {
+            description: 'Save and Continue button'
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
+        // Final Continue button to proceed
+        await clickIfExists(page, FITNESS_TO_PRACTICE.CONTINUE, {
+            description: 'Final Continue button',
+            timeout: TIMEOUTS.SHORT
+        });
+
+        await delay(TIMEOUTS.SHORT);
+
+        console.log('[STEP] Fitness to Practice completed successfully');
         return true;
 
     } catch (error) {
