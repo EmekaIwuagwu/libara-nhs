@@ -70,11 +70,13 @@ class NHSJobsAutomation {
             await delay(TIMEOUTS.SHORT);
 
             // Fill username
+            console.log(`[LOGIN] Using username: ${this.config.username}`);
             await fillIfExists(this.page, LOGIN.USERNAME_INPUT, this.config.username, {
                 description: 'Username field'
             });
 
             // Fill password
+            console.log(`[LOGIN] Using password: ${'*'.repeat(this.config.password.length)} (${this.config.password.length} chars)`);
             await fillIfExists(this.page, LOGIN.PASSWORD_INPUT, this.config.password, {
                 description: 'Password field'
             });
@@ -338,6 +340,20 @@ class NHSJobsAutomation {
                     const afterPauseUrl = this.page.url();
                     console.log(`[PAUSE] ✓ After clicking Start application, URL: ${afterPauseUrl}`);
                     await takeScreenshot(this.page, `after-pause-continue-${Date.now()}`);
+
+                    // Check if we're still on a pause/save page
+                    if (afterPauseUrl.includes('application-pause-save')) {
+                        console.log('[PAUSE] ⚠️ Still on pause-save page - checking for next button');
+
+                        // Log all buttons and links on this page
+                        const allButtons = await this.page.$$eval('button', btns => btns.map(b => ({ text: b.textContent.trim(), id: b.id, name: b.name, value: b.value })));
+                        const allInputs = await this.page.$$eval('input[type="submit"]', inputs => inputs.map(i => ({ id: i.id, name: i.name, value: i.value })));
+                        const allLinks = await this.page.$$eval('a', links => links.map(l => ({ text: l.textContent.trim(), href: l.href, id: l.id })).filter(l => l.text.length > 0 && l.text.length < 100));
+
+                        console.log('[DEBUG] Buttons on pause-save page:', JSON.stringify(allButtons, null, 2));
+                        console.log('[DEBUG] Submit inputs on pause-save page:', JSON.stringify(allInputs, null, 2));
+                        console.log('[DEBUG] Links on pause-save page:', JSON.stringify(allLinks, null, 2));
+                    }
                 }
 
                 // 3. Verify we're on Internal NHS Application
