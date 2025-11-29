@@ -319,32 +319,24 @@ class NHSJobsAutomation {
 
                 // 2. Check for Application Pause Page
                 if (currentUrl.includes('/application-pause')) {
-                    console.log('[PAUSE] ⚠️ Application pause page detected - clicking Continue');
+                    console.log('[PAUSE] ⚠️ Application pause page detected - clicking Start application button');
 
-                    // Try to click the Continue button on pause page
-                    const continueClicked = await clickIfExists(this.page, '#continue', {
-                        description: 'Continue from pause page',
+                    // The pause page has a button with id="save_continue" and value="Start application"
+                    const continueClicked = await clickIfExists(this.page, '#save_continue', {
+                        description: 'Start application button on pause page',
                         timeout: TIMEOUTS.MEDIUM
                     });
 
                     if (!continueClicked) {
-                        // Try button instead of link
-                        const continueBtn = await clickIfExists(this.page, 'button[value="Continue"]', {
-                            description: 'Continue button from pause page',
-                            timeout: TIMEOUTS.SHORT
-                        });
-
-                        if (!continueBtn) {
-                            console.log('[PAUSE] ❌ Could not find Continue button on pause page');
-                            result.error = 'Application pause page - Continue button not found';
-                            this.results.push(result);
-                            return result;
-                        }
+                        console.log('[PAUSE] ❌ Could not find Start application button on pause page');
+                        result.error = 'Application pause page - Start application button not found';
+                        this.results.push(result);
+                        return result;
                     }
 
                     await delay(TIMEOUTS.MEDIUM);
                     const afterPauseUrl = this.page.url();
-                    console.log(`[PAUSE] ✓ After clicking Continue, URL: ${afterPauseUrl}`);
+                    console.log(`[PAUSE] ✓ After clicking Start application, URL: ${afterPauseUrl}`);
                     await takeScreenshot(this.page, `after-pause-continue-${Date.now()}`);
                 }
 
