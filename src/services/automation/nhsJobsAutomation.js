@@ -304,7 +304,62 @@ class NHSJobsAutomation {
             if (started) {
                 await delay(TIMEOUTS.MEDIUM);
                 await takeScreenshot(this.page, `after-start-application-${Date.now()}`);
-                console.log(`[APPLICATION] After clicking apply, URL: ${this.page.url()}`);
+                const currentUrl = this.page.url();
+                console.log(`[APPLICATION] After clicking apply, URL: ${currentUrl}`);
+
+                // DETECT APPLICATION TYPE
+                // 1. Check for External ATS System
+                if (currentUrl.includes('/ats-direct-apply')) {
+                    console.log('[SKIP] ❌ External ATS system detected - not supported');
+                    console.log('[SKIP] This job uses an external application system (ATS)');
+                    result.error = 'External ATS application system - not supported';
+                    this.results.push(result);
+                    return result;
+                }
+
+                // 2. Check for Application Pause Page
+                if (currentUrl.includes('/application-pause')) {
+                    console.log('[PAUSE] ⚠️ Application pause page detected - clicking Continue');
+
+                    // Try to click the Continue button on pause page
+                    const continueClicked = await clickIfExists(this.page, '#continue', {
+                        description: 'Continue from pause page',
+                        timeout: TIMEOUTS.MEDIUM
+                    });
+
+                    if (!continueClicked) {
+                        // Try button instead of link
+                        const continueBtn = await clickIfExists(this.page, 'button[value="Continue"]', {
+                            description: 'Continue button from pause page',
+                            timeout: TIMEOUTS.SHORT
+                        });
+
+                        if (!continueBtn) {
+                            console.log('[PAUSE] ❌ Could not find Continue button on pause page');
+                            result.error = 'Application pause page - Continue button not found';
+                            this.results.push(result);
+                            return result;
+                        }
+                    }
+
+                    await delay(TIMEOUTS.MEDIUM);
+                    const afterPauseUrl = this.page.url();
+                    console.log(`[PAUSE] ✓ After clicking Continue, URL: ${afterPauseUrl}`);
+                    await takeScreenshot(this.page, `after-pause-continue-${Date.now()}`);
+                }
+
+                // 3. Verify we're on Internal NHS Application
+                const finalUrl = this.page.url();
+                if (!finalUrl.includes('/candidate/application/')) {
+                    console.log('[SKIP] ❌ Not an internal NHS application');
+                    console.log(`[SKIP] Current URL: ${finalUrl}`);
+                    result.error = 'Unknown application type - not internal NHS application';
+                    this.results.push(result);
+                    return result;
+                }
+
+                console.log('[INTERNAL] ✓ Internal NHS application confirmed - proceeding with automation');
+
             } else {
                 console.log('[APPLICATION] WARNING: Could not find Apply/Start button');
                 await takeScreenshot(this.page, `no-start-button-${Date.now()}`);
@@ -314,6 +369,10 @@ class NHSJobsAutomation {
                 const allLinks = await this.page.$$eval('a', links => links.map(l => ({ text: l.textContent.trim(), href: l.href })).filter(l => l.text.length > 0 && l.text.length < 50));
                 console.log('[DEBUG] All buttons on page:', allButtons);
                 console.log('[DEBUG] All relevant links on page:', allLinks);
+
+                result.error = 'Could not find Apply button';
+                this.results.push(result);
+                return result;
             }
 
             // Step 1: Contact Details
